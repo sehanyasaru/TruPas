@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share Credentials - TruPas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: white;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #CE1126 0%, #FCD116 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .platform-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother easing */
+            position: relative;
+            overflow: hidden;
+        }
+        .platform-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .platform-btn:active {
+            transform: scale(0.98);
+        }
+        /* Ripple effect on click */
+        .platform-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .platform-btn:active::before {
+            width: 100px;
+            height: 100px;
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stagger-enter {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+        @keyframes staggerUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stagger-1 { animation: staggerUp 0.4s ease-out 0.1s forwards; }
+        .stagger-2 { animation: staggerUp 0.4s ease-out 0.2s forwards; }
+        .stagger-3 { animation: staggerUp 0.4s ease-out 0.3s forwards; }
+        .stagger-4 { animation: staggerUp 0.4s ease-out 0.4s forwards; }
+        .pulse-glow {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(206, 17, 38, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(206, 17, 38, 0); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6); /* Darker for more focus */
+            backdrop-filter: blur(8px); /* Stronger blur */
+        }
+        .modal-content {
+            background-color: white;
+            margin: 8% auto; /* Slightly higher */
+            padding: 0;
+            border-radius: 20px; /* Softer corners */
+            width: 90%;
+            max-width: 420px; /* A bit wider */
+            box-shadow: 0 25px 80px rgba(0,0,0,0.35); /* Deeper shadow */
+            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy entrance */
+            transform-origin: center top;
+        }
+        @keyframes popIn {
+            from {
+                transform: translateY(-50px) scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-exit {
+            animation: popOut 0.3s ease-in forwards;
+        }
+        @keyframes popOut {
+            to {
+                transform: translateY(-20px) scale(0.95);
+                opacity: 0;
+            }
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #CE1126 0%, #FCD116 100%);
+            color: white;
+            padding: 2rem 1.5rem 1.5rem;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+        .modal-header i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+        .modal-body {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .badge-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            margin: 0 auto 1rem;
+            object-fit: cover;
+            border: 2px solid #FCD116;
+            box-shadow: 0 4px 12px rgba(252, 209, 22, 0.3);
+        }
+        .modal-footer {
+            padding: 0 1.5rem 1.5rem;
+            text-align: center;
+            border-top: 1px solid #f0f0f0;
+        }
+        .close {
+            color: rgba(255,255,255,0.8);
+            float: right;
+            font-size: 24px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 50%;
+            padding: 4px;
+        }
+        .close:hover {
+            color: white;
+            background: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
+        }
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        .platform-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .platform-icon {
+            width: 60px; /* Larger */
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem; /* Bigger icons */
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .platform-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        .cancel-btn {
+            background: transparent;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            background-image: linear-gradient(white, white),
+            linear-gradient(135deg, #CE1126 0%, #FCD116 100%);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .cancel-btn:hover {
+            background-image: linear-gradient(white, white),
+            linear-gradient(135deg, #FCD116 0%, #CE1126 100%);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+<!-- Sidebar (same as home) -->
+<div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+    <div class="p-6">
+        <div class="flex justify-center items-center mb-8">
+            <img src="{{ url_for('static', filename='uploads/logo_new.jpg') }}" alt="TruPas Logo" class="w-40 h-40 object-contain">
+        </div>
+        <nav class="space-y-4">
+            <a href="/home" class="flex items-center p-3 rounded-lg hover:bg-yellow-50 text-gray-700">
+                <i class="fas fa-home mr-3"></i> Dashboard
+            </a>
+            <a href="/claim" class="flex items-center p-3 rounded-lg hover:bg-yellow-50 text-gray-700">
+                <i class="fas fa-medal mr-3"></i> Claim Badges
+            </a>
+            <a href="/profile" class="flex items-center p-3 rounded-lg hover:bg-yellow-50 text-gray-700">
+                <i class="fas fa-user mr-3"></i> Profile
+            </a>
+            <a href="/logout" class="flex items-center p-3 rounded-lg hover:bg-red-50 text-red-600">
+                <i class="fas fa-sign-out-alt mr-3"></i> Logout
+            </a>
+        </nav>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="ml-64 p-8">
+    <header class="mb-8 fade-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">Share Your Achievements</h1>
+        <p class="text-gray-600">Select a verified credential to share on social platforms.</p>
+    </header>
+
+    {% if verified_badges %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for badge in verified_badges %}
+        <div class="bg-white rounded-xl p-6 shadow-md border-l-4 border-yellow-500 card-hover credential-card"
+             data-id="{{ badge.id }}"
+             data-title="{{ badge.title | e }}"
+             data-issuer="{{ badge.issuer | e }}"
+             data-share-url="{{ badge.share_url | e }}"
+             data-share-message="{{ badge.share_message | e | replace('\'', '\\\'') }}"
+             data-badge-url="{{ badge.badge_url | e }}">
+            <div class="relative mb-4">
+                <img src="{{ badge.badge_url }}" alt="{{ badge.title }}" class="w-full h-40 object-cover rounded-lg">
+                <div class="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">Verified</div>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ badge.title }}</h3>
+            <p class="text-sm text-gray-500 mb-4">Issuer: {{ badge.issuer }}</p>
+            <button class="w-full bg-gradient-to-r from-red-600 to-yellow-400 text-white py-2 rounded-lg font-semibold hover-scale">
+                <i class="fas fa-share-alt mr-2"></i> Share This
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl">
+        <i class="fas fa-share text-8xl text-yellow-400 mb-6"></i>
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">No Verified Credentials Yet!</h3>
+        <p class="text-gray-600 mb-8">Claim and verify your achievements to start sharing.</p>
+        <a href="/claim" class="bg-yellow-500 text-black px-8 py-3 rounded-lg font-semibold">Claim Badges</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Share Modal -->
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close" onclick="closeShareModal()">&times;</span>
+            <i class="fas fa-share-alt"></i> <!-- Share icon -->
+            <h2 id="modalTitle" class="text-xl font-bold mb-1"></h2>
+            <p id="modalIssuer" class="text-sm opacity-90 mb-0 bg-white/20 px-2 py-1 rounded-full inline-block"></p> <!-- Badge-like issuer -->
+        </div>
+        <div class="modal-body">
+            <img id="badgePreview" class="badge-preview pulse-glow" src="static/uploads/badge.png" alt="Badge Preview">
+            <p class="text-gray-600 mb-4">Choose a platform to share:</p>
+            <div class="platform-grid">
+                <div class="platform-item stagger-enter stagger-1">
+                    <button class="platform-btn bg-blue-600 platform-icon" onclick="shareOnFacebook()">
+                        <i class="fab fa-facebook-f"></i>
+                    </button>
+                    <span class="platform-label">Facebook</span>
+                </div>
+                <div class="platform-item stagger-enter stagger-2">
+                    <button class="platform-btn bg-blue-700 platform-icon" onclick="shareOnLinkedIn()">
+                        <i class="fab fa-linkedin-in"></i>
+                    </button>
+                    <span class="platform-label">LinkedIn</span>
+                </div>
+                <div class="platform-item stagger-enter stagger-3">
+                    <button class="platform-btn bg-gradient-to-r from-purple-500 to-pink-500 platform-icon" onclick="shareOnInstagram()">
+                        <i class="fab fa-instagram"></i>
+                    </button>
+                    <span class="platform-label">Instagram</span>
+                </div>
+                <div class="platform-item stagger-enter stagger-4">
+                    <button class="platform-btn bg-gray-600 platform-icon" onclick="copyLink()">
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <span class="platform-label">Copy Link</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn text-gray-700 px-6 py-2 font-medium" onclick="closeShareModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentShareUrl = '';
+    let currentMessage = '';
+    let currentBadgeUrl = ''; // New: for preview
+
+    // Event listener for card clicks and button clicks
+    document.addEventListener('DOMContentLoaded', function() {
+        // Card click
+        document.querySelectorAll('.credential-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const data = this.dataset;
+                openShareModal(
+                    data.id,
+                    data.title || 'Untitled Credential',
+                    data.issuer || 'Unknown Issuer',
+                    data.shareUrl || '',
+                    data.shareMessage || 'Share this credential!',
+                    data.badgeUrl || ''
+                );
+            });
+        });
+
+        // Button click (for "Share This")
+        document.querySelectorAll('.bg-gradient-to-r').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent card click
+                const card = this.closest('.credential-card');
+                if (card) {
+                    const data = card.dataset;
+                    openShareModal(
+                        data.id,
+                        data.title || 'Untitled Credential',
+                        data.issuer || 'Unknown Issuer',
+                        data.shareUrl || '',
+                        data.shareMessage || 'Share this credential!',
+                        data.badgeUrl || ''
+                    );
+                }
+            });
+        });
+    });
+
+    function openShareModal(id, title, issuer, shareUrl, message, badgeUrl = '') {
+        try {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalIssuer').textContent = `Issuer: ${issuer}`;
+            currentShareUrl = shareUrl;
+            currentMessage = message;
+            currentBadgeUrl = badgeUrl;
+
+            // Show preview if available
+            const preview = document.getElementById('badgePreview');
+            if (badgeUrl) {
+                preview.src = badgeUrl;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+
+            const modal = document.getElementById('shareModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            // Reset stagger animations
+            document.querySelectorAll('.stagger-enter').forEach(el => {
+                el.classList.remove('stagger-1', 'stagger-2', 'stagger-3', 'stagger-4');
+            });
+            // Trigger reflow then add classes for stagger
+            modal.offsetHeight; // Reflow
+            document.querySelectorAll('.stagger-enter')[0].classList.add('stagger-1');
+            document.querySelectorAll('.stagger-enter')[1].classList.add('stagger-2');
+            document.querySelectorAll('.stagger-enter')[2].classList.add('stagger-3');
+            document.querySelectorAll('.stagger-enter')[3].classList.add('stagger-4');
+        } catch (error) {
+            console.error('Error opening modal:', error);
+            alert('Failed to open share modal. Check console for details.');
+        }
+    }
+
+    function closeShareModal() {
+        const modalContent = document.querySelector('.modal-content');
+        modalContent.classList.add('modal-exit');
+        setTimeout(() => {
+            document.getElementById('shareModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            modalContent.classList.remove('modal-exit');
+        }, 300); // Match animation duration
+    }
+
+    function shareOnFacebook() {
+        const url = `https://www.facebook.com/sharing/sharer/sharer.php?u=${encodeURIComponent(currentShareUrl)}`;
+        window.open(url, '_blank', 'width=600,height=400');
+        confettiBurst();
+        closeShareModal();
+    }
+
+    function shareOnLinkedIn() {
+        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentShareUrl)}`;
+        window.open(url, '_blank', 'width=600,height=600');
+        confettiBurst();
+        closeShareModal();
+    }
+
+    function shareOnInstagram() {
+        copyLink();
+        alert('Link copied! Paste it in your Instagram story or post.');
+        confettiBurst();
+        closeShareModal();
+    }
+
+    function copyLink() {
+        navigator.clipboard.writeText(currentMessage).then(() => {
+            alert('Link and message copied to clipboard!');
+        }).catch(() => {
+            alert('Failed to copy. Please copy manually: ' + currentMessage);
+        });
+        confettiBurst();
+        closeShareModal();
+    }
+
+    function confettiBurst() {
+        if (typeof confetti !== 'undefined') {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#CE1126', '#FCD116', '#FFFFFF']
+            });
+        }
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('shareModal');
+        if (event.target === modal) {
+            closeShareModal();
+        }
+    }
+</script>
+</body>
+</html>
