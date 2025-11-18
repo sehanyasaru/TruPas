@@ -23,33 +23,30 @@ from firebase_admin import credentials, auth, firestore
 from firebase_admin.auth import ActionCodeSettings
 from datetime import datetime
 import firebase_admin
-import requests  # For Firebase REST API calls
+import requests 
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Needed for session
+app.secret_key = 'your_secret_key'  
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Google Drive credentials and folder ID
+
 SCOPES = ['https://www.googleapis.com/auth/drive']
-UPLOAD_FOLDER_ID = "1Xvnbs_Js8FacizjnCW9pBHUWs1t1mWLm"  # Replace with your Google Drive folder ID
+UPLOAD_FOLDER_ID = "1Xvnbs_Js8FacizjnCW9pBHUWs1t1mWLm" 
 
 SERVICE_ACCOUNT_FILE = "disco-dispatch-468911-e3-1150a9893570.json"
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
-# Firebase Web API Key (get from Firebase Console > Project Settings > General > Web API Key)
-FIREBASE_API_KEY = "AIzaSyDCLQhzWD_xofZWSyyOfTDkhj12fqHADWk"  # Replace with your actual Web API Key
 
-# Initialize Firebase (run once on startup)
+FIREBASE_API_KEY = "AIzaSyDCLQhzWD_xofZWSyyOfTDkhj12fqHADWk" 
+
 if not firebase_admin._apps:
-    cred = credentials.Certificate('firebase-service-account.json')  # Update path to your actual service account JSON
+    cred = credentials.Certificate('firebase-service-account.json') 
     firebase_admin.initialize_app(cred)
-db = firestore.client()  # Firestore instance
-
+db = firestore.client()  
 def authenticate():
     try:
         logger.info("Authenticating with Google Drive API")
@@ -67,22 +64,22 @@ def authenticate():
 
 def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
     tmp_file_path = None
-    gfile_id = None  # Track for cleanup if needed
+    gfile_id = None  
     try:
         drive = authenticate()
 
-        # Save to temp file
+
         with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tmp_file:
             file_storage.save(tmp_file.name)
             tmp_file_path = tmp_file.name
         logger.debug(f"Saved file to temporary path: {tmp_file_path}")
 
-        # Create and upload file
+  
         gfile = drive.CreateFile({
             'title': 'temp',
             'parents': [{'id': folder_id}]
         })
-        # Explicit close before upload (helps Windows locks)
+      
         file_storage.close()
 
         gfile.SetContentFile(tmp_file_path)
@@ -90,14 +87,13 @@ def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
         logger.debug(f"File uploaded, temporary ID: {gfile['id']}")
         gfile_id = gfile['id']
 
-        # Rename
         gfile['title'] = gfile['id']
         gfile.Upload()
         logger.info(f"File renamed to its ID: {gfile['id']}")
 
-        # Safe permissions handling
+
         try:
-            # Check existing permissions
+      
             permissions = gfile.GetPermissions()
             has_public_reader = any(
                 p.get('role') == 'reader' and p.get('type') == 'anyone'
@@ -116,34 +112,33 @@ def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
             error_msg = str(e).lower()
             if 'cannotmodifyinheritedpermission' in error_msg:
                 logger.warning(f"Permissions inherited from parent (file accessible via folder link). Skipping explicit set. Full error: {str(e)}")
-                # Do NOT raise—continue as success (file is public via folder)
+             
             else:
-                # Re-raise other permission errors (e.g., auth issues)
+             
                 logger.error(f"Unexpected permissions error: {str(e)}")
                 raise
 
-        # Enhanced temp file cleanup (explicit checks/closes)
         if tmp_file_path:
             max_retries = 5
             for attempt in range(max_retries):
                 try:
                     if os.path.exists(tmp_file_path):
-                        os.unlink(tmp_file_path)  # Use unlink for cross-platform
+                        os.unlink(tmp_file_path)  
                         logger.info(f"Temporary file deleted: {tmp_file_path}")
                     break
                 except (PermissionError, OSError) as pe:
                     if attempt < max_retries - 1:
                         logger.warning(f"Temp file locked (attempt {attempt + 1}/{max_retries}): {str(pe)}. Retrying in 2s...")
-                        time.sleep(2)  # Even longer for stubborn Windows locks
+                        time.sleep(2)  
                     else:
                         logger.error(f"Failed to delete temp file after {max_retries} attempts: {str(pe)}. Clean manually from %TEMP%.")
 
-        # Return shareable URL (works even if inherited)
+       
         return f"https://drive.google.com/file/d/{gfile['id']}/view?usp=sharing"
 
     except Exception as e:
         logger.error(f"Core upload failed (file not saved): {str(e)}")
-        # Emergency cleanup
+
         if tmp_file_path and os.path.exists(tmp_file_path):
             try:
                 os.unlink(tmp_file_path)
@@ -151,7 +146,7 @@ def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
             except Exception as cleanup_err:
                 logger.error(f"Emergency cleanup failed: {str(cleanup_err)}")
 
-        # Optional: Delete partial file from Drive if ID exists
+       
         if gfile_id:
             try:
                 trash_file = drive.CreateFile({'id': gfile_id})
