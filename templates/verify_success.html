@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Email Verified</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 6px solid #10b981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fillBorder 1s ease forwards;
+            position: relative;
+        }
+
+        @keyframes fillBorder {
+            0% {
+                border-color: transparent;
+            }
+            100% {
+                border-color: #10b981;
+            }
+        }
+
+        .tick {
+            font-size: 48px;
+            color: white;
+            background-color: #10b981;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0);
+            animation: scaleUp 0.6s 0.6s forwards;
+        }
+
+        @keyframes scaleUp {
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 1s ease 1.5s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+<div class="bg-white p-8 rounded-xl shadow-xl text-center space-y-6">
+    <div class="circle mx-auto">
+        <div class="tick">&#10003;</div>
+    </div>
+    <h2 class="text-2xl font-bold text-green-600 fade-in">Email Verified Successfully!</h2>
+    <p class="text-gray-700 fade-in">You can now close this page and <a href="https://freelance.learnx.ac.pg/signin" class="text-teal-600 font-medium underline hover:text-teal-800">log in</a>
+        .</p>
+</div>
+</body>
+</html>
