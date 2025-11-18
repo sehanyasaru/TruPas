@@ -1,0 +1,3 @@
+echo "service_account.json" >> .gitignore
+echo "disco-dispatch-468911-e3-1150a9893570.json" >> .gitignore
+echo "firebase-service-account.json" >> .gitignore
