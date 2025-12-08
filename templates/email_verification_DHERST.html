@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <link rel="stylesheet" href="/static/css/notification.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes scaleUp {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        @keyframes slideIn {
+            from { transform: translate(-50%, -60%) scale(0.9); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            to { transform: translate(-50%, -60%) scale(0.9); opacity: 0; }
+        }
+
+        .form-container {
+            transition: all 0.3s ease;
+        }
+        .form-container:hover {
+            transform: scale(1.05);
+        }
+        .disabled-field {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-[#edf2f7] flex items-center justify-center p-4">
+<div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md form-container">
+    <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Email Verification</h2>
+
+    <form id="emailVerificationForm" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Email</label>
+            <input
+                    type="email"
+                    id="email"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="example@domain.com"
+            />
+            <p id="emailError" class="text-red-500 text-sm mt-1 hidden"></p>
+        </div>
+        <button
+                type="submit"
+                id="sendVerificationButton"
+                class="w-full bg-teal-600 text-white py-2 px-4 rounded-md hover:bg-teal-700 transition duration-300"
+        >
+            Send Verification Email
+        </button>
+    </form>
+
+    <div class="mt-6 text-center">
+        <button
+                id="backToSignIn"
+                class="text-teal-600 hover:underline"
+        >
+            Back to Sign In
+        </button>
+    </div>
+
+    <div id="notification" class="notification hidden"></div>
+</div>
+<script src="/static/js/notification.js"></script>
+<script>
+    const emailVerificationForm = document.getElementById('emailVerificationForm');
+    const emailInput = document.getElementById('email');
+    const sendVerificationButton = document.getElementById('sendVerificationButton');
+    const backToSignIn = document.getElementById('backToSignIn');
+    const emailError = document.getElementById('emailError');
+    const notification = document.getElementById('notification');
+
+    let emailData = { email: '', firstname: '' };
+    let isEmailValid = false;
+
+    async function validateEmail(email) {
+        try {
+            const response = await fetch('/check-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ email }).toString()
+            });
+            const result = await response.json();
+            if (result.exists) {
+                emailData.firstname = result.firstname;
+            }
+            return result.exists;
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while validating email.');
+            return false;
+        }
+    }
+
+    async function sendVerification(email, firstname) {
+        try {
+            const response = await fetch('/send-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ email, firstname }).toString()
+            });
+            const result = await response.json();
+            if (result.error) {
+                alert(result.error);
+                return false;
+            } else {
+                alert('Verification email sent successfully! Please check your email.');
+                return true;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while sending verification email.');
+            return false;
+        }
+    }
+
+    emailVerificationForm.addEventListener('input', async (e) => {
+        const { id, value } = e.target;
+        emailData[id] = value;
+
+        if (id === 'email') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                emailError.textContent = 'Please enter a valid email address.';
+                emailError.classList.remove('hidden');
+                emailError.classList.add('error-animate');
+                setTimeout(() => emailError.classList.remove('error-animate'), 500);
+                isEmailValid = false;
+            } else {
+                isEmailValid = await validateEmail(value);
+                if (!isEmailValid) {
+                    emailError.textContent = 'Email not found.';
+                    emailError.classList.remove('hidden');
+                    emailError.classList.add('error-animate');
+                    setTimeout(() => emailError.classList.remove('error-animate'), 500);
+                } else {
+                    emailError.classList.add('hidden');
+                }
+            }
+        }
+    });
+
+    emailVerificationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isEmailValid) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+
+        const sent = await sendVerification(emailData.email, emailData.firstname);
+
+        if (sent) {
+            sendVerificationButton.textContent = 'Resend Verification Email';
+        }
+    });
+
+    backToSignIn.addEventListener('click', () => {
+        window.location.href = "/DHERST_login";
+    });
+</script>
+</body>
+</html>

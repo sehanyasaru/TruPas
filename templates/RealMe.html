@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruPas - Verified Badges & Certificates</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #FFFFFF; }
+
+        .golden-glow {
+            box-shadow: 0 0 20px rgba(252, 209, 22, 0.6), inset 0 0 15px rgba(252, 209, 22, 0.2);
+            animation: pulse-glow 6s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 20px rgba(252, 209, 22, 0.6), inset 0 0 15px rgba(252, 209, 22, 0.2); }
+            100% { box-shadow: 0 0 50px rgba(252, 209, 22, 1), inset 0 0 30px rgba(252, 209, 22, 0.5); }
+        }
+
+        .logo-container {
+            position: relative;
+            width: 14rem;
+            height: 14rem;
+            border: 3px solid #FCD116;
+            border-radius: 12%;
+            overflow: hidden;
+            background: transparent;
+        }
+        .logo-img {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: contain;
+            filter: brightness(0.9) contrast(1.2);
+        }
+
+        .badge-card { transition: all 0.3s ease; }
+        .badge-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(206, 17, 38, 0.2); }
+
+        .animate-fade-in { opacity: 0; transform: translateY(20px); transition: all 0.8s ease-out; }
+        .animate-fade-in.animate { opacity: 1; transform: translateY(0); }
+
+        .professional-button { transition: all 0.3s ease; }
+        .professional-button:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+
+        .button-appear { opacity: 0; transition: opacity 0.8s ease-out 0.5s; }
+        .button-appear.visible { opacity: 1; }
+
+        #register-now-btn {
+            position: absolute;
+            top: 4rem; right: 4rem;
+            width: 13rem; height: 3.8rem;
+            background-color: #CE1126;
+            color: white;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            box-shadow: 0 6px 15px rgba(206, 17, 38, 0.3);
+            transition: all 0.3s ease;
+        }
+        #register-now-btn:hover {
+            background-color: #FCD116;
+            color: black;
+            transform: scale(1.05);
+        }
+
+        .pulse-glow { animation: pulseGlow 3s infinite; }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(206, 17, 38, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(206, 17, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(206, 17, 38, 0); }
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+
+<div id="splash-screen" class="fixed inset-0 bg-gradient-to-br from-white via-yellow-50 to-red-50 flex flex-col items-center justify-between z-50 overflow-hidden">
+    <div class="flex-1 flex items-center justify-center w-full">
+        <div class="text-center transform transition-all duration-1000 ease-out opacity-0 animate-fade-in">
+            <div class="mx-auto mb-8 logo-container golden-glow">
+                <img id="trupas-splash-logo" src="static/uploads/logo_new.jpg" alt="TruPas Logo" class="logo-img" />
+                <i class="fas fa-certificate text-yellow-400 text-6xl absolute inset-0 m-auto hidden"></i>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold text-black mb-4 drop-shadow-2xl">TruPas</h1>
+            <p class="text-black/90 text-xl md:text-2xl font-medium">Empowering Success Through Verified Credentials</p>
+        </div>
+    </div>
+    <div class="pb-12 text-center">
+        <button id="get-started-btn" class="bg-gradient-to-r from-red-600 to-yellow-500 text-white font-bold px-12 py-5 rounded-full text-xl professional-button shadow-2xl button-appear">
+            Get Started <i class="fas fa-arrow-right ml-3"></i>
+        </button>
+        <div class="mt-6 flex items-center justify-center space-x-3 text-black/80">
+            <span class="text-sm font-medium">Powered by</span>
+            <img src="static/uploads/powerx.png" alt="PowerX" class="h-10" />
+        </div>
+    </div>
+</div>
+
+<div id="main-content" class="hidden">
+
+    <section class="relative py-32 px-4 bg-gradient-to-b from-white to-red-50 overflow-hidden">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="mb-12 animate-fade-in">
+                <div class="mx-auto mb-8 logo-container golden-glow">
+                    <img src="static/uploads/logo_new.jpg" alt="TruPas" class="logo-img" />
+                </div>
+                <h1 class="text-5xl md:text-7xl font-bold text-black mb-6">TruPas</h1>
+                <p class="text-xl md:text-2xl text-gray-800 max-w-4xl mx-auto leading-relaxed">
+                    Claim, showcase, and verify your digital badges and certificates. Authenticate your achievements with unbreakable trust, inspired by the rich cultural heritage of <strong class="text-red-600">Papua New Guinea.</strong>.
+                </p>
+                <button id="explore-features-btn" class="mt-10 bg-black text-yellow-400 font-bold px-12 py-5 rounded-full text-xl professional-button hover:bg-gray-900">
+                    Explore Features <i class="fas fa-chevron-down ml-3"></i>
+                </button>
+            </div>
+        </div>
+        <a href="/signup">
+            <div id="register-now-btn">Register Now</div>
+        </a>
+    </section>
+    <section class="py-20 px-4 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl md:text-5xl font-bold text-center text-black mb-6">Why TruPas?</h2>
+            <p class="text-xl text-center text-gray-700 mb-16 max-w-4xl mx-auto">
+                Elevate your credentials with verifiable digital assets that reflect professionalism and the rich cultural heritage of Papua New Guinea.
+            </p>
+            <div class="grid md:grid-cols-3 gap-10">
+                <div class="badge-card text-center p-10 rounded-3xl bg-gradient-to-br from-pink-50 to-red-100 border-2 border-red-200 shadow-xl">
+                    <div class="w-24 h-24 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-award text-5xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-black mb-4">Claim Digital Badges</h3>
+                    <p class="text-gray-700">Instantly claim and customize PNG badges for your skills. Share them across LinkedIn, resumes, and portfolios with one click.</p>
+                </div>
+                <div class="badge-card text-center p-10 rounded-3xl bg-gradient-to-br from-pink-50 to-red-100 border-2 border-red-200 shadow-xl">
+                    <div class="w-24 h-24 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-search text-5xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-black mb-4">Verify Certificates</h3>
+                    <p class="text-gray-700">Secure verification links for every certificate. Employers can instantly confirm authenticity with our blockchain-powered system.</p>
+                </div>
+                <div class="badge-card text-center p-10 rounded-3xl bg-gradient-to-br from-pink-50 to-red-100 border-2 border-red-200 shadow-xl">
+                    <div class="w-24 h-24 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-share-nodes text-5xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-black mb-4">Showcase Worldwide</h3>
+                    <p class="text-gray-700">Embed, export, and broadcast your achievements. Make your profile stand out with professional, culturally inspired verifications.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-6 bg-gradient-to-r from-red-50 via-white to-yellow-50">
+        <div class="max-w-6xl mx-auto text-center">
+            <!-- Icon -->
+            <div class="inline-flex items-center justify-center w-40 h-40 bg-gradient-to-br from-red-600 to-yellow-500 rounded-full mb-8 shadow-2xl pulse-glow">
+                <img src="static/uploads/DHERST.jpg" alt="Image" class="w-full h-full object-cover rounded-full">
+            </div>
+
+
+            <h2 class="text-4xl md:text-5xl font-bold text-black mb-8 leading-tight">
+                Supporting <span class="text-red-600">DHERST PNG</span><br>
+                National Education Goals
+            </h2>
+
+            <p class="text-xl text-gray-800 max-w-4xl mx-auto leading-relaxed mb-16">
+                TruPas fully aligns with the <strong>Department of Higher Education, Research, Science and Technology (DHERST)</strong>
+                vision of building a skilled, verified, and globally competitive workforce for Papua New Guinea.
+                By issuing verified digital credentials, we help universities, institutions, and training providers contribute to
+                national transparency, reduce certificate fraud, and enable instant verification supporting DHERST’s goals of
+                quality assurance and graduate employability.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+
+                <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-red-100">
+                    <i class="fas fa-building text-5xl text-red-600 mb-4"></i>
+                    <div class="text-5xl md:text-6xl font-bold text-black" data-count="68">0</div>
+                    <p class="text-lg text-gray-700 mt-3 font-medium">Institutions Enrolled</p>
+                </div>
+                <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-yellow-200 scale-105">
+                    <i class="fas fa-certificate text-5xl text-yellow-600 mb-4"></i>
+                    <div class="text-5xl md:text-6xl font-bold text-black" data-count="28450">0</div>
+                    <p class="text-lg text-gray-700 mt-3 font-medium">Verified Credentials Issued</p>
+                </div>
+
+                <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-black/10">
+                    <i class="fas fa-check-circle text-5xl text-green-600 mb-4"></i>
+                    <div class="text-5xl md:text-6xl font-bold text-black" data-count="342">0</div>
+                    <p class="text-lg text-gray-700 mt-3 font-medium">Verifications Per Day</p>
+                </div>
+            </div>
+
+            <div class="mt-16">
+                <a href="/DHERST_login" class="inline-flex items-center bg-black text-yellow-400 font-bold text-xl px-14 py-6 rounded-full hover:bg-gray-900 professional-button shadow-2xl transition transform hover:scale-105">
+                    Explore National Credential Insights <i class="fas fa-arrow-right ml-4"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+    <footer class="bg-black text-white py-16 px-6">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="logo-container golden-glow mx-auto mb-8 w-32 h-32">
+                <img src="static/uploads/logo_new.jpg" alt="TruPas" class="logo-img" />
+            </div>
+            <p class="text-yellow-400 text-xl font-bold mb-4">Verify Achievements • Build Unbreakable Trust</p>
+            <p class="text-gray-300 mb-8">TruPas is powered by PowerX, a leading platform for digital learning and credentialing. PowerX enables seamless integration, automated issuance, and global verification of your achievements.</p>
+            <div class="flex justify-center">
+                <img src="static/uploads/powerx.png" alt="PowerX" class="h-12" />
+            </div>
+            <p class="text-gray-500 text-sm mt-12">&copy; 2025 TruPas • Papua New Guinea</p>
+        </div>
+    </footer>
+</div>
+
+<script>
+    const countUp = () => {
+        const counters = document.querySelectorAll('[data-count]');
+        const speed = 97;
+
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = +counter.getAttribute('data-count');
+                const count = +counter.innerText;
+                const increment = target / speed;
+
+                if (count < target) {
+                    counter.innerText = Math.ceil(count + increment);
+                    setTimeout(updateCount, 20);
+                } else {
+                    counter.innerText = target.toLocaleString();
+                }
+            };
+            updateCount();
+        });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                countUp();
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    const dherstSection = document.querySelector('section.bg-gradient-to-r');
+    if (dherstSection) observer.observe(dherstSection);
+    function setupImageFallback(img, fallback) {
+        img.onerror = () => { img.style.display = 'none'; if (fallback) fallback.classList.remove('hidden'); };
+        img.onload = () => { if (fallback) fallback.classList.add('hidden'); };
+    }
+
+    window.addEventListener('load', () => {
+        document.querySelectorAll('img').forEach(img => {
+            const fallback = img.parentElement.querySelector('i');
+            setupImageFallback(img, fallback);
+        });
+
+        const splash = document.getElementById('splash-screen');
+        const main = document.getElementById('main-content');
+        const splashContent = splash.querySelector('.animate-fade-in');
+        const btn = document.getElementById('get-started-btn');
+
+        setTimeout(() => {
+            splashContent.classList.add('animate');
+            btn.classList.add('visible');
+        }, 200);
+
+        btn.onclick = () => {
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.classList.add('hidden');
+                main.classList.remove('hidden');
+                document.querySelectorAll('#main-content .animate-fade-in').forEach((el, i) => {
+                    setTimeout(() => el.classList.add('animate'), i * 200);
+                });
+            }, 600);
+        };
+
+        document.getElementById('explore-features-btn').onclick = () => {
+            document.querySelector('section:nth-of-type(2)').scrollIntoView({ behavior: 'smooth' });
+        };
+    });
+</script>
+</body>
+</html>

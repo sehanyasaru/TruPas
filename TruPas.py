@@ -1,3 +1,4 @@
+import json
 import urllib.parse
 import functools
 import uuid
@@ -23,30 +24,33 @@ from firebase_admin import credentials, auth, firestore
 from firebase_admin.auth import ActionCodeSettings
 from datetime import datetime
 import firebase_admin
-import requests 
+import requests  # For Firebase REST API calls
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  
+app.secret_key = 'your_secret_key'  # Needed for session
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
+# Google Drive credentials and folder ID
 SCOPES = ['https://www.googleapis.com/auth/drive']
-UPLOAD_FOLDER_ID = "1Xvnbs_Js8FacizjnCW9pBHUWs1t1mWLm" 
+UPLOAD_FOLDER_ID = "1Xvnbs_Js8FacizjnCW9pBHUWs1t1mWLm"  # Replace with your Google Drive folder ID
 
 SERVICE_ACCOUNT_FILE = "disco-dispatch-468911-e3-1150a9893570.json"
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
+# Firebase Web API Key (get from Firebase Console > Project Settings > General > Web API Key)
+FIREBASE_API_KEY = "AIzaSyDCLQhzWD_xofZWSyyOfTDkhj12fqHADWk"  # Replace with your actual Web API Key
 
-FIREBASE_API_KEY = "AIzaSyDCLQhzWD_xofZWSyyOfTDkhj12fqHADWk" 
-
+# Initialize Firebase (run once on startup)
 if not firebase_admin._apps:
-    cred = credentials.Certificate('firebase-service-account.json') 
+    cred = credentials.Certificate('firebase-service-account.json')  # Update path to your actual service account JSON
     firebase_admin.initialize_app(cred)
-db = firestore.client()  
+db = firestore.client()  # Firestore instance
+
 def authenticate():
     try:
         logger.info("Authenticating with Google Drive API")
@@ -62,24 +66,98 @@ def authenticate():
         logger.error(f"Authentication failed: {str(e)}")
         raise
 
+@app.route('/check-email', methods=['GET', 'POST'])
+def check_email():
+    if request.method == 'GET':
+        return render_template('email_verification_DHERST.html')
+    try:
+        email = request.form.get('email')
+
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+        try:
+            user = auth.get_user_by_email(email)
+            return jsonify({'exists': True, 'firstname': user.display_name})
+        except auth.UserNotFoundError:
+            return jsonify({'exists': False})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': 'Error checking email'}), 500
+
+# @app.route('/forgot-password', methods=['GET', 'POST'])
+# def forgot_password():
+#     if request.method == 'GET':
+#         email = request.args.get('email')
+#         print(f"GET /forgot-password: email={email}")
+#         if email:
+#             session['reset_email'] = email
+#         return render_template('forgot_password.html', email=email)
+#
+#     if request.method == 'POST':
+#         connection = get_database_connection()
+#         if connection is None:
+#             print("POST /forgot-password: Database connection failed")
+#             return jsonify({"error": "Database connection failed"}), 500
+#
+#         try:
+#             data = request.form
+#             new_password = data.get('newPassword')
+#             username = session.get('reset_email') or data.get('email') or request.args.get('email')
+#             print(f"POST /forgot-password: username={username}, newPassword={'*' * len(new_password) if new_password else None}")
+#
+#             if not username:
+#                 print("POST /forgot-password: No email in session, form, or args")
+#                 return jsonify({"error": "Invalid or missing email. Please use the password reset link."}), 400
+#
+#             if not new_password:
+#                 print("POST /forgot-password: Missing newPassword")
+#                 return jsonify({"error": "New password is required"}), 400
+#
+#             if len(new_password) < 8:
+#                 print(f"POST /forgot-password: Password too short, length={len(new_password)}")
+#                 return jsonify({"error": "Password must be at least 8 characters"}), 400
+#
+#             cursor = connection.cursor(dictionary=True)
+#             cursor.execute("SELECT * FROM registration WHERE username = %s", (username,))
+#             user = cursor.fetchone()
+#             print(f"POST /forgot-password: User query result={user}")
+#
+#             if not user:
+#                 cursor.close()
+#                 print(f"POST /forgot-password: Username {username} not found")
+#                 return jsonify({"error": "Username not found."}), 404
+#
+#             hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+#             cursor.execute("UPDATE registration SET password = %s WHERE username = %s", (hashed_password, username))
+#             connection.commit()
+#             cursor.close()
+#             print(f"POST /forgot-password: Password updated for username={username}")
+#             session.pop('reset_email', None)  # Clear session
+#             return jsonify({"message": "Password reset successful!"})
+#         except Error as e:
+#             print(f"POST /forgot-password: Database error: {e}")
+#             return jsonify({"error": f"Failed to reset password: {str(e)}"}), 500
+#         finally:
+#             connection.close()
+
 def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
     tmp_file_path = None
-    gfile_id = None  
+    gfile_id = None  # Track for cleanup if needed
     try:
         drive = authenticate()
 
-
+        # Save to temp file
         with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tmp_file:
             file_storage.save(tmp_file.name)
             tmp_file_path = tmp_file.name
         logger.debug(f"Saved file to temporary path: {tmp_file_path}")
 
-  
+        # Create and upload file
         gfile = drive.CreateFile({
             'title': 'temp',
             'parents': [{'id': folder_id}]
         })
-      
+        # Explicit close before upload (helps Windows locks)
         file_storage.close()
 
         gfile.SetContentFile(tmp_file_path)
@@ -87,13 +165,14 @@ def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
         logger.debug(f"File uploaded, temporary ID: {gfile['id']}")
         gfile_id = gfile['id']
 
+        # Rename
         gfile['title'] = gfile['id']
         gfile.Upload()
         logger.info(f"File renamed to its ID: {gfile['id']}")
 
-
+        # Safe permissions handling
         try:
-      
+            # Check existing permissions
             permissions = gfile.GetPermissions()
             has_public_reader = any(
                 p.get('role') == 'reader' and p.get('type') == 'anyone'
@@ -112,33 +191,34 @@ def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
             error_msg = str(e).lower()
             if 'cannotmodifyinheritedpermission' in error_msg:
                 logger.warning(f"Permissions inherited from parent (file accessible via folder link). Skipping explicit set. Full error: {str(e)}")
-             
+                # Do NOT raise—continue as success (file is public via folder)
             else:
-             
+                # Re-raise other permission errors (e.g., auth issues)
                 logger.error(f"Unexpected permissions error: {str(e)}")
                 raise
 
+        # Enhanced temp file cleanup (explicit checks/closes)
         if tmp_file_path:
             max_retries = 5
             for attempt in range(max_retries):
                 try:
                     if os.path.exists(tmp_file_path):
-                        os.unlink(tmp_file_path)  
+                        os.unlink(tmp_file_path)  # Use unlink for cross-platform
                         logger.info(f"Temporary file deleted: {tmp_file_path}")
                     break
                 except (PermissionError, OSError) as pe:
                     if attempt < max_retries - 1:
                         logger.warning(f"Temp file locked (attempt {attempt + 1}/{max_retries}): {str(pe)}. Retrying in 2s...")
-                        time.sleep(2)  
+                        time.sleep(2)  # Even longer for stubborn Windows locks
                     else:
                         logger.error(f"Failed to delete temp file after {max_retries} attempts: {str(pe)}. Clean manually from %TEMP%.")
 
-       
+        # Return shareable URL (works even if inherited)
         return f"https://drive.google.com/file/d/{gfile['id']}/view?usp=sharing"
 
     except Exception as e:
         logger.error(f"Core upload failed (file not saved): {str(e)}")
-
+        # Emergency cleanup
         if tmp_file_path and os.path.exists(tmp_file_path):
             try:
                 os.unlink(tmp_file_path)
@@ -146,7 +226,7 @@ def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
             except Exception as cleanup_err:
                 logger.error(f"Emergency cleanup failed: {str(cleanup_err)}")
 
-       
+        # Optional: Delete partial file from Drive if ID exists
         if gfile_id:
             try:
                 trash_file = drive.CreateFile({'id': gfile_id})
@@ -441,69 +521,140 @@ def signup():
         logger.error(f"Signup error: {str(e)}")
         return jsonify({"error": f"Failed to register: {str(e)}"}), 500
 
+# Add this import at the top if not already there
+import json
+
 @app.route('/claim', methods=['GET', 'POST'])
 @require_login
 def claim_badges():
     user_id = session['user_id']
+
+    # PNG Provinces → Universities (accurate)
+    province_universities = {
+        "National Capital District": ["University of Papua New Guinea", "Pacific Adventist University", "Institute of Business Studies"],
+        "Central": ["Don Bosco Technological Institute"],
+        "Milne Bay": ["Milne Bay Technical College"],
+        "Oro": ["Popondetta Teachers College"],
+        "Morobe": ["Papua New Guinea University of Technology", "Lae University of Technology"],
+        "Madang": ["Divine Word University", "Madang Technical College"],
+        "East Sepik": ["University of Natural Resources and Environment"],
+        "East New Britain": ["Pacific Adventist University (Raluana)"],
+        "West New Britain": ["Kimbe College of Health Sciences"],
+        "Bougainville": ["Bougainville Technical College"],
+        "Western Highlands": ["Highlands Agricultural College", "Mt Hagen Technical College"],
+        "Southern Highlands": ["Mendi School of Nursing"],
+        "Enga": ["Enga Teachers College"],
+        "Chimbu": ["Kundiawa School of Nursing"],
+        "Western": ["Western Pacific University"],
+        "Gulf": [], "West Sepik": [], "New Ireland": [], "Manus": [], "Jiwaka": [], "Hela": []
+    }
+
+    # 35+ official courses
+    courses_list = [
+        "Bachelor of Science in Engineering",
+        "Bachelor of Science in Transformative Leadership and Studies",
+        "Bachelor of Education (Primary)",
+        "Bachelor of Education (Secondary)",
+        "Bachelor of Nursing",
+        "Bachelor of Medicine and Bachelor of Surgery (MBBS)",
+        "Bachelor of Business Administration",
+        "Bachelor of Accounting",
+        "Bachelor of Information Technology",
+        "Bachelor of Civil Engineering",
+        "Bachelor of Electrical Engineering",
+        "Bachelor of Mechanical Engineering",
+        "Bachelor of Agriculture",
+        "Bachelor of Environmental Science",
+        "Bachelor of Law (LLB)",
+        "Bachelor of Arts in Social Work",
+        "Bachelor of Public Policy and Management",
+        "Bachelor of Economics",
+        "Diploma in Teaching (Primary)",
+        "Diploma in Nursing",
+        "Diploma in Business Studies",
+        "Diploma in Information Technology",
+        "Certificate in Carpentry and Joinery",
+        "Certificate in Electrical Installation",
+        "Certificate in Automotive Mechanics",
+        "Certificate in Hospitality and Tourism",
+        "Certificate in Agriculture",
+        "Certificate in Early Childhood Education",
+        "Certificate in Community Development",
+        "Certificate in Project Management",
+        "Certificate in Accounting",
+        "Certificate in Office Administration",
+        "Certificate in Graphic Design",
+        "Certificate in Web Development",
+        "Certificate in Cybersecurity"
+    ]
+
     if request.method == 'GET':
-        try:
-            # Fetch uploads (only reviewing)
-            uploads_query = db.collection(f'users/{user_id}/uploads').where('status', '==', 'reviewing').order_by('created_at', direction=firestore.Query.DESCENDING).stream()
-            uploads = [doc.to_dict() | {'id': doc.id} for doc in uploads_query]
+        # Your existing upload/verified logic stays the same
+        uploads_query = db.collection(f'users/{user_id}/uploads') \
+            .where('status', '==', 'reviewing') \
+            .order_by('created_at', direction=firestore.Query.DESCENDING).stream()
+        uploads = [doc.to_dict() | {'id': doc.id} for doc in uploads_query]
 
-            # Fetch verified credentials
-            verified_query = db.collection(f'users/{user_id}/credentials').where('status', '==', 'verified').order_by('created_at', direction=firestore.Query.DESCENDING).stream()
-            verified_badges = [doc.to_dict() | {'id': doc.id} for doc in verified_query]
+        verified_query = db.collection(f'users/{user_id}/credentials') \
+            .where('status', '==', 'verified') \
+            .order_by('created_at', direction=firestore.Query.DESCENDING).stream()
+        verified_badges = [doc.to_dict() | {'id': doc.id} for doc in verified_query]
 
-            return render_template('claim.html',
-                                   uploads=uploads,
-                                   verified_badges=verified_badges,
-                                   first_name=session.get('first_name', 'User'))
-        except Exception as e:
-            logger.error(f"Error loading claim page: {str(e)}")
-            flash('Failed to load data. Please try again.', 'error')
-            return redirect(url_for('home'))
+        return render_template('claim.html',
+                               uploads=uploads,
+                               verified_badges=verified_badges,
+                               first_name=session.get('first_name', 'User'),
+                               provinces=sorted(province_universities.keys()),
+                               universities_json=json.dumps(province_universities),
+                               courses=courses_list)
 
+    # POST — same validation + file upload only after form is complete
     if request.method == 'POST':
-        if 'file' not in request.files:
-            return jsonify({"error": "No file selected"}), 400
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({"error": "No file selected"}), 400
-
         try:
-            filename = secure_filename(file.filename)
-            doc_name = request.form.get('doc_name', '').strip()
             applicant_name = request.form.get('applicant_name', '').strip()
-            course_name = request.form.get('course_name', '').strip()
-            organization_name = request.form.get('organization_name', '').strip()
-            course_type = request.form.get('course_type', '').strip()
-            index_number = request.form.get('index_number', '').strip()
+            gender         = request.form.get('gender')
+            province       = request.form.get('province')
+            university     = request.form.get('university')
+            course_name    = request.form.get('course_name')
+            course_type    = request.form.get('course_type', '').strip()
+            index_number   = request.form.get('index_number', '').strip()
 
-            title = doc_name if doc_name and len(doc_name) <= 20 else f"{course_name} Certificate" if course_name else filename.rsplit('.', 1)[0]
+            if not all([applicant_name, gender, province, university, course_name]):
+                return jsonify({"error": "All fields are required"}), 400
 
+            if 'file' not in request.files or request.files['file'].filename == '':
+                return jsonify({"error": "Please upload your certificate"}), 400
+
+            file = request.files['file']
+            allowed = ('.pdf', '.jpg', '.jpeg', '.png')
+            if not file.filename.lower().endswith(allowed):
+                return jsonify({"error": "Only PDF, JPG, PNG allowed"}), 400
+
+            title = course_name[:50] + ("..." if len(course_name) > 50 else "")
+
+            # Upload only after full validation
             drive_url = upload_to_drive(file)
-            unique_id = str(uuid.uuid4())
 
-            upload_data = {
+            db.collection(f'users/{user_id}/uploads').add({
                 'title': title,
-                'unique_id': unique_id,
+                'unique_id': str(uuid.uuid4()),
                 'file_url': drive_url,
                 'status': 'reviewing',
                 'created_at': firestore.SERVER_TIMESTAMP,
                 'applicant_name': applicant_name,
+                'gender': gender,
+                'province': province,
+                'university': university,
                 'course_name': course_name,
-                'organization_name': organization_name,
-                'course_type': course_type,
+                'course_type': course_type or "Not specified",
                 'index_number': index_number
-            }
+            })
 
-            db.collection(f'users/{user_id}/uploads').add(upload_data)
+            return jsonify({"message": "Certificate submitted successfully! Under review."})
 
-            return jsonify({"message": f"Certificate '{title}' uploaded successfully! Under review.", "unique_id": unique_id})
         except Exception as e:
-            logger.error(f"Upload error: {str(e)}")
-            return jsonify({"error": f"Failed to upload: {str(e)}"}), 500
+            logger.error(f"Upload error: {e}")
+            return jsonify({"error": "Upload failed. Try again."}), 500
 
 @app.route('/update_upload/<upload_id>', methods=['POST'])
 @require_login
@@ -610,6 +761,62 @@ def public_credential(cred_id):
     except Exception as e:
         logger.error(f"Error loading public credential: {str(e)}")
         return "Failed to load credential", 500
+
+
+@app.route('/DHERST_login', methods=['GET', 'POST'])
+def DHERST_login():
+    if request.method == 'GET':
+        return render_template('DHESRT_login.html')
+
+    try:
+        data = request.form
+        email = data.get('username')
+        password = data.get('password')
+
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
+
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+        payload = {
+            "email": email,
+            "password": password,
+            "returnSecureToken": True
+        }
+        response = requests.post(url, json=payload)
+        response_data = response.json()
+
+        if 'error' in response_data:
+            return jsonify({"error": "Invalid email or password"}), 401
+
+        id_token = response_data['idToken']
+        uid = response_data['localId']
+
+        user_doc = db.collection('users').document(uid).get()
+        if not user_doc.exists:
+            return jsonify({"error": "User profile not found"}), 404
+
+        user_data = user_doc.to_dict()
+
+        firebase_user = auth.get_user(uid)
+        if not firebase_user.email_verified:
+            return jsonify({"error": "Please verify your email before logging in."}), 403
+
+        if not user_data.get('verified', False):
+            db.collection('users').document(uid).update({'verified': True})
+
+        session['user_id'] = uid  # Use UID
+        session['user_email'] = email
+        session['first_name'] = user_data['first_name']
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({"success": True, "email": email, "message": "Login successful!"})
+        else:
+            flash('Login successful! Welcome back.', 'success')
+            return redirect(url_for('home'))
+
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        return jsonify({"error": f"Failed to log in: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

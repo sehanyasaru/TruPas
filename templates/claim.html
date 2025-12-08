@@ -1,978 +1,423 @@
-<!-- templates/claim.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claim Badges - TruPas</title>
+    <title>Claim Achievements - TruPas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background: white;  /* Pure white background */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #fff; }
+
+        /* Your original beautiful gradients - FULLY RESTORED */
+        .color-blue   { border-left: 6px solid #3b82f6; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+        .color-green  { border-left: 6px solid #10b981; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+        .color-purple { border-left: 6px solid #8b5cf6; background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
+        .color-orange { border-left: 6px solid #f59e0b; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+        .color-red    { border-left: 6px solid #ef4444; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+
+        .upload-zone {
+            border: 3px dashed #CE1126;
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
-        .upload-zone { border: 2px dashed #CE1126; transition: all 0.3s ease; }
-        .upload-zone.dragover { border-color: #FCD116; background: rgba(252, 209, 22, 0.1); transform: scale(1.02); }
-        .preview-img { max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .badge-card { transition: all 0.3s ease; position: relative; overflow: hidden; }
-        .badge-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
-        .badge-glow { box-shadow: 0 0 20px currentColor; }
+        .upload-zone.active {
+            border-color: #FCD116;
+            background: rgba(252, 209, 22, 0.1);
+            cursor: pointer;
+            opacity: 1;
+        }
+        .preview-img {
+            max-width: 100%;
+            max-height: 360px;
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+            margin: 0 auto;
+            display: block;
+        }
+        .badge-card {
+            transition: all 0.3s ease;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .badge-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.22);
+        }
+        .badge-glow { box-shadow: 0 0 35px rgba(252, 209, 22, 0.7); }
         .status-badge {
-            padding: 0.5rem 1.5rem;  /* Wider for "Reviewing" */
-            border-radius: 20px;
-            font-size: 0.875rem;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
             font-weight: 600;
-            white-space: nowrap;
-            min-width: 100px;  /* Ensures "Reviewing" fits fully */
+            font-size: 0.9rem;
         }
         .status-reviewing { background: #fff3cd; color: #856404; }
-        .status-uploaded { background: #d1ecf1; color: #0c5460; }
-        .status-verified { background: #d4edda; color: #155724; }
-        .color-blue { border-left: 4px solid #3b82f6; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
-        .color-green { border-left: 4px solid #10b981; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
-        .color-purple { border-left: 4px solid #8b5cf6; background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
-        .color-orange { border-left: 4px solid #f59e0b; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
-        .color-red { border-left: 4px solid #ef4444; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
-        .fade-in { animation: fadeIn 0.6s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .confetti { pointer-events: none; }
-        .verified-section { scroll-margin-top: 100px; }
-        .remove-btn { background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; transition: background 0.2s; }
-        .remove-btn:hover { background: #dc2626; }
-        /* Rich Alert Styles */
-        .alert {
-            display: none;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            align-items: center;
-            gap: 0.75rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        .alert-error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        .alert-icon {
-            width: 1.25rem;
-            height: 1.25rem;
-            flex-shrink: 0;
-        }
-        .checkmark-svg {
-            stroke-dasharray: 66;
-            stroke-dashoffset: 66;
-            stroke-width: 4;
-            stroke-miterlimit: 10;
-            stroke: #28a745;
-            fill: none;
-            animation: checkmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-        }
-        @keyframes checkmark {
-            0% { stroke-dashoffset: 66; }
-            100% { stroke-dashoffset: 0; }
-        }
-        .error-svg {
-            stroke: #dc3545;
-            fill: #dc3545;
-        }
-        .alert-slide-up {
-            animation: slideUp 0.4s ease-out;
-        }
-        @keyframes slideUp {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-        .success-icon {
-            animation: iconPulse 1.5s infinite;
-        }
-        @keyframes iconPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        .error-icon {
-            animation: iconShake 0.6s ease-out;
-        }
-        @keyframes iconShake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            animation: fadeIn 0.3s ease-out;
-        }
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 0;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideDown 0.3s ease-out;
-        }
-        @keyframes slideDown {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .modal-header {
-            background: linear-gradient(135deg, #CE1126 0%, #FCD116 100%);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 12px 12px 0 0;
-            text-align: center;
-        }
-        .modal-body {
-            padding: 1.5rem;
-        }
-        .modal-footer {
-            padding: 1rem 1.5rem 1.5rem;
-            border-top: 1px solid #e5e7eb;
-            text-align: right;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            position: absolute;
-            right: 1.5rem;
-            top: 1.5rem;
-        }
-        .close:hover {
-            color: white;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #374151;
-        }
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s;
-        }
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #CE1126;
-            box-shadow: 0 0 0 3px rgba(206, 17, 38, 0.1);
-        }
-        .other-input {
-            display: none;
-            margin-top: 0.5rem;
-        }
-        .other-input.show {
-            display: block;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #CE1126 0%, #FCD116 100%);
-            color: white;
-            padding: 0.75rem 2rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-        }
-        .btn-secondary {
-            background: #6b7280;
-            color: white;
-            padding: 0.75rem 2rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-right: 1rem;
-            transition: background 0.2s;
-        }
-        .btn-secondary:hover {
-            background: #4b5563;
-        }
-        .error-message {
-            color: #ef4444;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            display: none;
-        }
+        .status-verified  { background: #d4edda; color: #155724; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 20px; width: 90%; max-width: 720px; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 90px rgba(0,0,0,0.35); animation: pop 0.4s ease; }
+        @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .close { position: absolute; right: 1.5rem; top: 1rem; font-size: 32px; cursor: pointer; color: white; font-weight: bold; }
+        .other-input { display: none; margin-top: 0.5rem; }
+        .other-input.show { display: block; }
+        .alert { padding: 1rem 1.5rem; border-radius: 12px; margin: 1.5rem 0; font-weight: 500; display: flex; align-items: center; gap: 0.75rem; animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body class="min-h-screen">
+
 <!-- Sidebar -->
-<div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
-    <div class="p-6">
-        <div class="flex justify-center items-center mb-8">
-            <img src="{{ url_for('static', filename='uploads/logo_new.jpg') }}" alt="TruPas Logo" class="w-40 h-40 object-contain">
-        </div>
-        <nav class="space-y-4">
-            <a href="/home" class="flex items-center p-3 rounded-lg hover:bg-yellow-50 text-gray-700">
-                <i class="fas fa-home mr-3"></i> Dashboard
-            </a>
-            <a href="/claim" class="flex items-center p-3 rounded-lg bg-yellow-100 text-yellow-700 font-semibold">
-                <i class="fas fa-medal mr-3"></i> Claim Badges
-            </a>
-            <a href="/profile" class="flex items-center p-3 rounded-lg hover:bg-yellow-50 text-gray-700">
-                <i class="fas fa-user mr-3"></i> Profile
-            </a>
-            <a href="/logout" class="flex items-center p-3 rounded-lg hover:bg-red-50 text-red-600">
-                <i class="fas fa-sign-out-alt mr-3"></i> Logout
-            </a>
+<div class="fixed inset-y-0 left-0 w-64 bg-white shadow-2xl z-50">
+    <div class="p-8 text-center">
+        <img src="{{ url_for('static', filename='uploads/logo_new.jpg') }}" alt="Logo" class="w-44 mx-auto">
+        <nav class="mt-10 space-y-3">
+            <a href="/home" class="flex items-center p-4 rounded-xl hover:bg-yellow-50 text-gray-700"><i class="fas fa-home mr-4"></i> Dashboard</a>
+            <a href="/claim" class="flex items-center p-4 rounded-xl bg-yellow-100 text-yellow-800 font-bold"><i class="fas fa-medal mr-4"></i> Claim Achievements</a>
+            <a href="/profile" class="flex items-center p-4 rounded-xl hover:bg-yellow-50 text-gray-700"><i class="fas fa-user mr-4"></i> Profile</a>
+            <a href="/logout" class="flex items-center p-4 rounded-xl hover:bg-red-50 text-red-600"><i class="fas fa-sign-out-alt mr-4"></i> Logout</a>
         </nav>
     </div>
 </div>
 
 <!-- Main Content -->
-<div class="ml-64 p-8">
-    <header class="mb-8 fade-in">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Claim Your Badges</h1>
-        <p class="text-gray-600">Upload certificates to get verified and showcase your achievements!</p>
-    </header>
+<div class="ml-64 p-10">
 
-    <!-- Upload Certificates Section -->
-    <section class="mb-12 fade-in" style="animation-delay: 0.1s;">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Upload Certificate</h2>
-        <form id="uploadForm" class="bg-white rounded-xl p-8 shadow-lg">
-            <div class="upload-zone border-2 border-dashed border-red-300 rounded-lg p-8 text-center mb-6 hover:border-yellow-400 transition-all">
-                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
-                <p class="text-gray-600 mb-2">Drag & drop your certificate here, or click to browse</p>
-                <input type="file" id="fileInput" name="file" accept="image/*,.pdf" class="hidden" required>
-                <button type="button" onclick="document.getElementById('fileInput').click()" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
-                    Choose File
-                </button>
-            </div>
-            <div id="previewContainer" class="hidden mb-6 text-center">
-                <h3 class="text-lg font-medium text-gray-700 mb-2">Preview:</h3>
-                <div id="preview" class="inline-block"></div>
-                <input type="text" id="docName" name="doc_name" placeholder="Enter document name (max 20 chars)" maxlength="20" class="mt-4 w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500" required>
-                <div id="nameError" class="text-red-500 text-sm mt-1 hidden"></div>
-                <button type="button" id="removeBtn" class="remove-btn mt-4">
-                    <i class="fas fa-trash mr-1"></i> Remove File
-                </button>
-            </div>
-            <button type="submit" id="submitBtn" class="bg-yellow-500 text-black px-8 py-3 rounded-lg font-semibold text-lg hover:bg-yellow-600 transition disabled:opacity-50" disabled>
-                <i class="fas fa-paper-plane mr-2"></i> Submit for Review
+    <h1 class="text-4xl font-bold text-gray-800 mb-4">Claim Your Achievements</h1>
+    <p class="text-gray-600 mb-10">Upload certificates → get verified → showcase your success!</p>
+
+    <!-- Upload Form -->
+    <div class="bg-white rounded-2xl shadow-xl p-10 mb-12">
+        <h2 class="text-2xl font-bold mb-8">Upload New Certificate</h2>
+
+        <div id="uploadZone" class="upload-zone mb-10">
+            <i class="fas fa-cloud-upload-alt text-7xl text-gray-400 mb-6"></i>
+            <p class="text-xl text-gray-600 mb-6">Click below to fill certificate details first</p>
+            <input type="file" id="fileInput" accept="image/*,.pdf" class="hidden">
+            <button id="chooseFileBtn" class="bg-gray-400 text-white px-10 py-4 rounded-xl text-lg cursor-not-allowed" disabled>
+                Choose File (locked)
             </button>
-        </form>
-        <!-- Alert Container -->
-        <div id="alertContainer"></div>
-    </section>
-
-    <!-- Submit Modal Popup -->
-    <div id="submitModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="close" onclick="closeModal()">&times;</span>
-                <h2 class="text-xl font-bold mb-0">Additional Details</h2>
-                <p class="text-sm opacity-90 mt-1">Please fill in the required information to submit your certificate for review.</p>
-            </div>
-            <form id="modalForm">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="applicantName">Name of the Applicant *</label>
-                        <input type="text" id="applicantName" name="applicant_name" required>
-                        <div class="error-message" id="applicantNameError">This field is required.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="courseName">Course Name *</label>
-                        <input type="text" id="courseName" name="course_name" required>
-                        <div class="error-message" id="courseNameError">This field is required.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="organizationName">Organization Name *</label>
-                        <select id="organizationName" name="organization_name" required>
-                            <option value="">Select an organization</option>
-                            <option value="Harvard University">Harvard University</option>
-                            <option value="Massachusetts Institute of Technology (MIT)">Massachusetts Institute of Technology (MIT)</option>
-                            <option value="Stanford University">Stanford University</option>
-                            <option value="University of Oxford">University of Oxford</option>
-                            <option value="University of Cambridge">University of Cambridge</option>
-                            <option value="Imperial College London">Imperial College London</option>
-                            <option value="ETH Zurich">ETH Zurich</option>
-                            <option value="National University of Singapore">National University of Singapore</option>
-                            <option value="University College London">University College London</option>
-                            <option value="California Institute of Technology (Caltech)">California Institute of Technology (Caltech)</option>
-                        </select>
-                        <div class="error-message" id="organizationNameError">Please select an organization.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="courseType">Course Type *</label>
-                        <select id="courseType" name="course_type" required onchange="toggleOtherInput()">
-                            <option value="">Select course type</option>
-                            <option value="degree">Degree</option>
-                            <option value="diploma">Diploma</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <input type="text" id="courseTypeOther" name="course_type_other" class="other-input" placeholder="Specify course type">
-                        <div class="error-message" id="courseTypeError">This field is required.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="indexNumber">Index Number *</label>
-                        <input type="text" id="indexNumber" name="index_number" required>
-                        <div class="error-message" id="indexNumberError">This field is required.</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn-primary" id="modalSubmitBtn">OK</button>
-                </div>
-            </form>
         </div>
-    </div>
 
-    <!-- Update Modal Popup -->
-    <div id="updateModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="close" onclick="closeUpdateModal()">&times;</span>
-                <h2 class="text-xl font-bold mb-0">Update Details</h2>
-                <p class="text-sm opacity-90 mt-1">Update the information for your certificate.</p>
-            </div>
-            <form id="updateModalForm">
-                <input type="hidden" id="updateUploadId" name="upload_id">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="updateDocName">Document Name *</label>
-                        <input type="text" id="updateDocName" name="doc_name" maxlength="20" required>
-                        <div class="error-message" id="updateDocNameError">This field is required and max 20 chars.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="updateApplicantName">Name of the Applicant *</label>
-                        <input type="text" id="updateApplicantName" name="applicant_name" required>
-                        <div class="error-message" id="updateApplicantNameError">This field is required.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="updateCourseName">Course Name *</label>
-                        <input type="text" id="updateCourseName" name="course_name" required>
-                        <div class="error-message" id="updateCourseNameError">This field is required.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="updateOrganizationName">Organization Name *</label>
-                        <select id="updateOrganizationName" name="organization_name" required>
-                            <option value="">Select an organization</option>
-                            <option value="Harvard University">Harvard University</option>
-                            <option value="Massachusetts Institute of Technology (MIT)">Massachusetts Institute of Technology (MIT)</option>
-                            <option value="Stanford University">Stanford University</option>
-                            <option value="University of Oxford">University of Oxford</option>
-                            <option value="University of Cambridge">University of Cambridge</option>
-                            <option value="Imperial College London">Imperial College London</option>
-                            <option value="ETH Zurich">ETH Zurich</option>
-                            <option value="National University of Singapore">National University of Singapore</option>
-                            <option value="University College London">University College London</option>
-                            <option value="California Institute of Technology (Caltech)">California Institute of Technology (Caltech)</option>
-                        </select>
-                        <div class="error-message" id="updateOrganizationNameError">Please select an organization.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="updateCourseType">Course Type *</label>
-                        <select id="updateCourseType" name="course_type" required onchange="updateToggleOtherInput()">
-                            <option value="">Select course type</option>
-                            <option value="degree">Degree</option>
-                            <option value="diploma">Diploma</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <input type="text" id="updateCourseTypeOther" name="course_type_other" class="other-input" placeholder="Specify course type">
-                        <div class="error-message" id="updateCourseTypeError">This field is required.</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="updateIndexNumber">Index Number *</label>
-                        <input type="text" id="updateIndexNumber" name="index_number" required>
-                        <div class="error-message" id="updateIndexNumberError">This field is required.</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeUpdateModal()">Cancel</button>
-                    <button type="submit" class="btn-primary" id="updateModalSubmitBtn">Update</button>
-                </div>
-            </form>
-        </div>
-    </div>
+        <!-- Preview Section -->
+        <div id="previewContainer" class="hidden bg-gray-50 rounded-2xl p-8 mb-8 border-2 border-dashed border-gray-300">
+            <h3 class="text-xl font-semibold text-center mb-6 text-gray-700">Certificate Preview</h3>
+            <div id="previewContent" class="mb-8 flex justify-center"></div>
 
-    <!-- Uploaded Certificates (Under Review) -->
-    <section class="mb-12 fade-in" style="animation-delay: 0.2s;">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Your Uploads (Under Review)</h2>
-        {% if uploads %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for upload in uploads %}
-            <div class="badge-card bg-white rounded-xl p-6 shadow-md border-l-4 {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }}">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 class="text-xl font-semibold text-gray-800">{{ upload.title }}</h3>
-                    <span class="status-badge status-{{ upload.status }}">{{ upload.status | title }}</span>
+            <div class="max-w-2xl mx-auto space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Document Name (max 20 chars)</label>
+                    <input type="text" id="docName" placeholder="e.g. Bachelor of Science" maxlength="20"
+                           class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 transition">
                 </div>
-                <p class="text-sm text-gray-500 mb-4">Unique ID: <strong>{{ upload.unique_id[:8] }}...</strong></p>
-                {% if upload.course_name %}
-                <p class="text-sm text-gray-500 mb-2">Course: {{ upload.course_name }}</p>
-                {% endif %}
-                {% if upload.organization_name %}
-                <p class="text-sm text-gray-500 mb-4">Organization: {{ upload.organization_name }}</p>
-                {% endif %}
-                <iframe src="{{ upload.file_url }}" class="w-full h-32 rounded-lg border" frameborder="0" title="Preview"></iframe>
-                <div class="flex space-x-2 mt-4">
-                    <a href="{{ upload.file_url }}" target="_blank" class="bg-gray-500 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-gray-600">View</a>
-                    <button class="bg-yellow-500 text-black px-4 py-2 rounded text-sm font-semibold hover:bg-yellow-600 update-btn"
-                            data-id="{{ upload.id }}"
-                            data-title="{{ upload.title | e }}"
-                            data-applicant="{{ upload.applicant_name | default('') | e }}"
-                            data-course="{{ upload.course_name | default('') | e }}"
-                            data-org="{{ upload.organization_name | default('') | e }}"
-                            data-type="{{ upload.course_type | default('') | e }}"
-                            data-index="{{ upload.index_number | default('') | e }}">
-                        Update
+                <div class="text-center">
+                    <button id="removeBtn" class="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg transition hidden">
+                        Remove File
                     </button>
                 </div>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="text-center py-8 bg-gray-50 rounded-xl">
-            <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
-            <p class="text-gray-600">No uploads yet. Start by uploading your first certificate!</p>
-        </div>
-        {% endif %}
-    </section>
 
-    <!-- Verified Badges Section -->
-    <section id="verifiedSection" class="verified-section fade-in" style="animation-delay: 0.3s;">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Verified Badges</h2>
-        {% if verified_badges %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for badge in verified_badges %}
-            <div class="badge-card bg-white rounded-xl p-6 shadow-md border-l-4 {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }} badge-glow">
-                <div class="relative mb-4">
-                    <img src="{{ badge.badge_url }}" alt="{{ badge.title }}" class="w-full h-40 object-cover rounded-lg">
-                    <div class="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">Verified</div>
+        <button id="mainSubmitBtn" class="w-full bg-gradient-to-r from-red-600 to-yellow-500 text-white font-bold text-xl py-6 rounded-xl hover:from-red-700 hover:to-yellow-600 transition shadow-xl">
+            Fill Details First
+        </button>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <!-- Updated Details Modal with Province, University, Gender, Course Dropdown -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <div class="bg-gradient-to-r from-red-600 to-yellow-500 text-white p-8 text-center relative">
+                <span class="close" onclick="closeModal()">×</span>
+                <h2 class="text-3xl font-bold">Certificate Details</h2>
+                <p class="mt-3 text-lg opacity-90">Please fill all fields accurately</p>
+            </div>
+            <form id="detailsForm" class="p-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block font-bold mb-2">Applicant Name *</label>
+                        <input type="text" id="applicantName" required class="w-full px-5 py-4 border-2 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2">Gender *</label>
+                        <select id="gender" required class="w-full px-5 py-4 border-2 rounded-xl">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2">Province *</label>
+                        <select id="province" required class="w-full px-5 py-4 border-2 rounded-xl">
+                            <option value="">Select Province</option>
+                            <option>National Capital District</option>
+                            <option>Central</option>
+                            <option>Milne Bay</option>
+                            <option>Oro</option>
+                            <option>Morobe</option>
+                            <option>Madang</option>
+                            <option>East Sepik</option>
+                            <option>West Sepik</option>
+                            <option>Manus</option>
+                            <option>New Ireland</option>
+                            <option>East New Britain</option>
+                            <option>West New Britain</option>
+                            <option>Bougainville</option>
+                            <option>Western</option>
+                            <option>Gulf</option>
+                            <option>Southern Highlands</option>
+                            <option>Hela</option>
+                            <option>Western Highlands</option>
+                            <option>Jiwaka</option>
+                            <option>Chimbu</option>
+                            <option>Eastern Highlands</option>
+                            <option>Enga</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2">University / Institution *</label>
+                        <select id="university" required class="w-full px-5 py-4 border-2 rounded-xl" disabled>
+                            <option value="">First select province</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2">Course / Program *</label>
+                        <select id="courseName" required class="w-full px-5 py-4 border-2 rounded-xl">
+                            <option value="">Select Course</option>
+                            <option>Bachelor of Science in Computer Engineering</option>
+                            <option>Bachelor of Information Technology</option>
+                            <option>Bachelor of Civil Engineering</option>
+                            <option>Bachelor of Electrical Engineering</option>
+                            <option>Bachelor of Mechanical Engineering</option>
+                            <option>Bachelor of Nursing</option>
+                            <option>Bachelor of Medicine & Surgery (MBBS)</option>
+                            <option>Bachelor of Education (Primary)</option>
+                            <option>Bachelor of Business Administration</option>
+                            <option>Bachelor of Accounting</option>
+                            <option>Bachelor of Agriculture</option>
+                            <option>Diploma in Nursing</option>
+                            <option>Diploma in Teaching (Primary)</option>
+                            <option>Certificate in Automotive Mechanics</option>
+                            <option>Certificate in Carpentry & Joinery</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2">Index / Student ID *</label>
+                        <input type="text" id="indexNumber" required class="w-full px-5 py-4 border-2 rounded-xl">
+                    </div>
                 </div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ badge.title }}</h3>
-                <p class="text-sm text-gray-500 mb-2">Issuer: {{ badge.issuer }}</p>
-                <p class="text-sm text-gray-500 mb-4">Unique ID: <strong>{{ badge.id[:8] }}...</strong></p>
-                <div class="flex space-x-2">
-                    <a href="/download/{{ badge.id }}" class="bg-blue-500 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-600 flex-1 text-center">
-                        <i class="fas fa-download mr-1"></i> Download
-                    </a>
+                <div class="flex justify-end gap-4 mt-10">
+                    <button type="button" onclick="closeModal()" class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl">Cancel</button>
+                    <button type="submit" class="px-10 py-4 bg-gradient-to-r from-red-600 to-yellow-500 hover:from-red-700 hover:to-yellow-600 text-white font-bold rounded-xl">Continue Upload File</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Under Review & Verified Sections (unchanged) -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Your Uploads (Under Review)</h2>
+        {% if uploads %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for upload in uploads %}
+            <div class="badge-card bg-white rounded-xl p-6 shadow-lg {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }}">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">{{ upload.title }}</h3>
+                    <span class="status-badge status-reviewing">Reviewing</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">ID: <strong>{{ upload.unique_id[:8] }}...</strong></p>
+                {% if upload.course_name %}<p class="text-sm text-gray-600 mb-1">Course: {{ upload.course_name }}</p>{% endif %}
+                {% if upload.university %}<p class="text-sm text-gray-600 mb-4">University: {{ upload.university }}</p>{% endif %}
+
+                <iframe src="{{ upload.file_url }}" class="w-full h-44 rounded-lg border mb-4" frameborder="0"></iframe>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="{{ upload.file_url }}" target="_blank" class="bg-gray-700 hover:bg-gray-800 text-white text-center py-3 rounded-lg font-semibold">View</a>
+                    <button class="bg-yellow-500 hover:bg-yellow-600 text-black py-3 rounded-lg font-semibold update-btn"
+                            data-id="{{ upload.id }}"
+                            data-title="{{ upload.title|e }}"
+                            data-applicant="{{ upload.applicant_name|default('')|e }}"
+                            data-course="{{ upload.course_name|default('')|e }}"
+                            data-university="{{ upload.university|default('')|e }}"
+                            data-index="{{ upload.index_number|default('')|e }}">Update</button>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div class="text-center py-12 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl">
-            <i class="fas fa-star text-8xl text-yellow-400 mb-6 confetti" data-confetti></i>
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">No Verified Badges Yet!</h3>
-            <p class="text-gray-600 mb-8">Upload and get verified to unlock your first badge. Celebrate your achievements!</p>
+        <div class="text-center py-16 bg-gray-50 rounded-2xl">
+            <p class="text-xl text-gray-600">No pending uploads yet.</p>
         </div>
         {% endif %}
     </section>
+
+    <section id="verifiedSection">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Verified Achievements</h2>
+        {% if verified_badges %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for badge in verified_badges %}
+            <div class="badge-card bg-white rounded-xl p-6 shadow-xl {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }} badge-glow">
+                <div class="relative mb-4">
+                    <img src="{{ badge.badge_url }}" alt="{{ badge.title }}" class="w-full h-52 object-cover rounded-lg">
+                    <div class="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">Verified</div>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">{{ badge.title }}</h3>
+                <p class="text-sm text-gray-600 mb-1">Issuer: {{ badge.issuer }}</p>
+                <p class="text-sm text-gray-600 mb-4">ID: <strong>{{ badge.id[:8] }}...</strong></p>
+                <a href="/download/{{ badge.id }}" class="block text-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg">
+                    Download Achievement
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-20 bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl">
+            <i class="fas fa-award text-9xl text-yellow-500 mb-6"></i>
+            <h3 class="text-3xl font-bold mb-4">No Verified Achievements Yet!</h3>
+            <p class="text-gray-600 text-lg">Your journey starts here!</p>
+        </div>
+        {% endif %}
+    </section>
+
 </div>
 
 <script>
-    // Rich Alert Function
-    function showAlert(message, type = 'success') {
-        const alertContainer = document.getElementById('alertContainer');
-        const isSuccess = type === 'success';
-
-        // Clear previous alerts
-        alertContainer.innerHTML = '';
-
-        // Create alert HTML with icon
-        const icon = isSuccess
-            ? '<svg class="alert-icon success-icon checkmark-svg" viewBox="0 0 24 24"><path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"/></svg>'
-            : '<svg class="alert-icon error-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
-
-        const alertHtml = `
-                <div class="alert ${isSuccess ? 'alert-success' : 'alert-error'} alert-slide-up flex">
-                    ${icon}
-                    <span>${message}</span>
-                </div>
-            `;
-
-        alertContainer.innerHTML = alertHtml;
-
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            const alert = alertContainer.querySelector('.alert');
-            if (alert) {
-                alert.style.opacity = '0';
-                setTimeout(() => alert.remove(), 300);
-            }
-        }, 5000);
-    }
-
-    // Submit Modal Functions
-    function showModal() {
-        document.getElementById('submitModal').style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Prevent background scroll
-    }
-
-    function closeModal() {
-        document.getElementById('submitModal').style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restore scroll
-        // Clear form and errors
-        document.getElementById('modalForm').reset();
-        clearModalErrors();
-        toggleOtherInput();
-    }
-
-    function toggleOtherInput() {
-        const courseType = document.getElementById('courseType');
-        const otherInput = document.getElementById('courseTypeOther');
-        if (courseType.value === 'other') {
-            otherInput.classList.add('show');
-            otherInput.required = true;
-        } else {
-            otherInput.classList.remove('show');
-            otherInput.required = false;
-            otherInput.value = '';
-        }
-    }
-
-    function showModalError(fieldId, message) {
-        const errorEl = document.getElementById(fieldId + 'Error');
-        errorEl.textContent = message;
-        errorEl.style.display = 'block';
-    }
-
-    function clearModalErrors() {
-        document.querySelectorAll('#modalForm .error-message').forEach(el => {
-            el.style.display = 'none';
-        });
-    }
-
-    function validateModalForm() {
-        clearModalErrors();
-        let isValid = true;
-
-        const applicantName = document.getElementById('applicantName').value.trim();
-        if (!applicantName) {
-            showModalError('applicantName', 'Name of the applicant is required.');
-            isValid = false;
-        }
-
-        const courseName = document.getElementById('courseName').value.trim();
-        if (!courseName) {
-            showModalError('courseName', 'Course name is required.');
-            isValid = false;
-        }
-
-        const organizationName = document.getElementById('organizationName').value;
-        if (!organizationName) {
-            showModalError('organizationName', 'Please select an organization.');
-            isValid = false;
-        }
-
-        const courseType = document.getElementById('courseType').value;
-        const courseTypeOther = document.getElementById('courseTypeOther').value.trim();
-        if (!courseType) {
-            showModalError('courseType', 'Course type is required.');
-            isValid = false;
-        } else if (courseType === 'other' && !courseTypeOther) {
-            showModalError('courseType', 'Please specify the course type.');
-            isValid = false;
-        }
-
-        const indexNumber = document.getElementById('indexNumber').value.trim();
-        if (!indexNumber) {
-            showModalError('indexNumber', 'Index number is required.');
-            isValid = false;
-        }
-
-        return isValid;
-    }
-
-    // Update Modal Functions
-    function closeUpdateModal() {
-        document.getElementById('updateModal').style.display = 'none';
-        document.body.style.overflow = 'auto';
-        document.getElementById('updateModalForm').reset();
-        clearUpdateModalErrors();
-        updateToggleOtherInput();
-    }
-
-    function updateToggleOtherInput() {
-        const courseType = document.getElementById('updateCourseType');
-        const otherInput = document.getElementById('updateCourseTypeOther');
-        if (courseType.value === 'other') {
-            otherInput.classList.add('show');
-            otherInput.required = true;
-        } else {
-            otherInput.classList.remove('show');
-            otherInput.required = false;
-            otherInput.value = '';
-        }
-    }
-
-    function showUpdateModalError(fieldId, message) {
-        const errorEl = document.getElementById('update' + fieldId.charAt(0).toUpperCase() + fieldId.slice(1) + 'Error') || document.getElementById(fieldId + 'Error');
-        if (errorEl) {
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-        }
-    }
-
-    function clearUpdateModalErrors() {
-        document.querySelectorAll('#updateModalForm .error-message').forEach(el => {
-            el.style.display = 'none';
-        });
-    }
-
-    function validateUpdateModalForm() {
-        clearUpdateModalErrors();
-        let isValid = true;
-
-        const docName = document.getElementById('updateDocName').value.trim();
-        if (!docName || docName.length > 20) {
-            showUpdateModalError('DocName', 'Document name is required and max 20 chars.');
-            isValid = false;
-        }
-
-        const applicantName = document.getElementById('updateApplicantName').value.trim();
-        if (!applicantName) {
-            showUpdateModalError('ApplicantName', 'Name of the applicant is required.');
-            isValid = false;
-        }
-
-        const courseName = document.getElementById('updateCourseName').value.trim();
-        if (!courseName) {
-            showUpdateModalError('CourseName', 'Course name is required.');
-            isValid = false;
-        }
-
-        const organizationName = document.getElementById('updateOrganizationName').value;
-        if (!organizationName) {
-            showUpdateModalError('OrganizationName', 'Please select an organization.');
-            isValid = false;
-        }
-
-        const courseType = document.getElementById('updateCourseType').value;
-        const courseTypeOther = document.getElementById('updateCourseTypeOther').value.trim();
-        if (!courseType) {
-            showUpdateModalError('CourseType', 'Course type is required.');
-            isValid = false;
-        } else if (courseType === 'other' && !courseTypeOther) {
-            showUpdateModalError('CourseType', 'Please specify the course type.');
-            isValid = false;
-        }
-
-        const indexNumber = document.getElementById('updateIndexNumber').value.trim();
-        if (!indexNumber) {
-            showUpdateModalError('IndexNumber', 'Index number is required.');
-            isValid = false;
-        }
-
-        return isValid;
-    }
-
-    // Update Button Click Handler
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('update-btn')) {
-            const btn = e.target;
-            const uploadId = btn.dataset.id;
-            const title = btn.dataset.title;
-            const applicant = btn.dataset.applicant;
-            const course = btn.dataset.course;
-            const org = btn.dataset.org;
-            const type = btn.dataset.type;
-            const index = btn.dataset.index;
-
-            // Set values
-            document.getElementById('updateDocName').value = title;
-            document.getElementById('updateApplicantName').value = applicant;
-            document.getElementById('updateCourseName').value = course;
-            document.getElementById('updateOrganizationName').value = org;
-            document.getElementById('updateIndexNumber').value = index;
-            document.getElementById('updateUploadId').value = uploadId;
-
-            // Set course type
-            const updateCourseType = document.getElementById('updateCourseType');
-            const updateCourseTypeOther = document.getElementById('updateCourseTypeOther');
-            if (type === 'degree' || type === 'diploma') {
-                updateCourseType.value = type;
-                updateCourseTypeOther.value = '';
-            } else {
-                updateCourseType.value = 'other';
-                updateCourseTypeOther.value = type;
-            }
-            updateToggleOtherInput();
-
-            document.getElementById('updateModal').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-    });
-
-    // Drag & Drop Upload
-    const uploadZone = document.querySelector('.upload-zone');
+    const uploadZone = document.getElementById('uploadZone');
     const fileInput = document.getElementById('fileInput');
-    const docNameInput = document.getElementById('docName');
+    const chooseFileBtn = document.getElementById('chooseFileBtn');
     const previewContainer = document.getElementById('previewContainer');
-    const preview = document.getElementById('preview');
-    const nameError = document.getElementById('nameError');
-    const submitBtn = document.getElementById('submitBtn');
+    const previewContent = document.getElementById('previewContent');
+    const docName = document.getElementById('docName');
     const removeBtn = document.getElementById('removeBtn');
+    const mainSubmitBtn = document.getElementById('mainSubmitBtn');
+    let certificateDetails = null;
 
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadZone.addEventListener(eventName, preventDefaults, false);
-    });
+    // PNG Universities by Province
+    const universitiesByProvince = {
+        "National Capital District": ["University of Papua New Guinea (UPNG)", "Pacific Adventist University", "Institute of Business Studies", "Don Bosco Technological Institute"],
+        "Morobe": ["Papua New Guinea University of Technology (Unitech)"],
+        "Madang": ["Divine Word University (DWU)"],
+        "Eastern Highlands": ["University of Goroka (UOG)"],
+        "Western Highlands": ["Western Pacific University"],
+        "Hela": ["Hela Provincial College"],
+        "Enga": ["Enga Teachers College"],
+        "East Sepik": ["University of Natural Resources & Environment (UNRE)"],
+        "East New Britain": ["Pacific Adventist University (Raluana)"],
+        "Bougainville": ["Bougainville Technical College"]
+    };
 
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
+    // Dynamic University Population
+    document.getElementById('province').addEventListener('change', function() {
+        const province = this.value;
+        const uniSelect = document.getElementById('university');
+        uniSelect.innerHTML = '<option value="">Select University</option>';
+        uniSelect.disabled = false;
 
-    ['dragenter', 'dragover'].forEach(eventName => {
-        uploadZone.addEventListener(eventName, () => uploadZone.classList.add('dragover'), false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        uploadZone.addEventListener(eventName, () => uploadZone.classList.remove('dragover'), false);
-    });
-
-    uploadZone.addEventListener('drop', handleDrop, false);
-
-    fileInput.addEventListener('change', handleFileSelect);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleFiles(files);
-    }
-
-    function handleFileSelect(e) {
-        const files = e.target.files;
-        handleFiles(files);
-    }
-
-    function handleFiles(files) {
-        if (files.length > 0) {
-            const file = files[0];
-            previewFile(file);
+        if (province && universitiesByProvince[province]) {
+            universitiesByProvince[province].forEach(uni => {
+                uniSelect.innerHTML += `<option value="${uni}">${uni}</option>`;
+            });
+        } else {
+            uniSelect.innerHTML = '<option value="">No universities listed</option>';
+            uniSelect.disabled = true;
         }
+    });
+
+    function showAlert(msg, type = 'success') {
+        document.getElementById('alertContainer').innerHTML = `<div class="alert alert-${type}"><i class="fas fa-${type==='success'?'check-circle':'exclamation-triangle'}"></i> ${msg}</div>`;
+        setTimeout(() => document.getElementById('alertContainer').innerHTML = '', 5000);
     }
 
-    function previewFile(file) {
+    function openModal() { document.getElementById('detailsModal').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+    function closeModal() { document.getElementById('detailsModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
+
+    mainSubmitBtn.addEventListener('click', e => { e.preventDefault(); openModal(); });
+
+    document.getElementById('detailsForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const required = ['applicantName', 'gender', 'province', 'university', 'courseName', 'indexNumber'];
+        if (!required.every(id => document.getElementById(id).value.trim())) {
+            return showAlert('Please fill all required fields', 'error');
+        }
+
+        certificateDetails = {
+            applicant_name: document.getElementById('applicantName').value.trim(),
+            gender: document.getElementById('gender').value,
+            province: document.getElementById('province').value,
+            university: document.getElementById('university').value,
+            course_name: document.getElementById('courseName').value,
+            index_number: document.getElementById('indexNumber').value.trim()
+        };
+
+        closeModal();
+        uploadZone.classList.add('active');
+        chooseFileBtn.disabled = false;
+        chooseFileBtn.textContent = 'Choose File';
+        chooseFileBtn.classList.replace('bg-gray-400', 'bg-red-600');
+        mainSubmitBtn.textContent = 'Submit for Review';
+        showAlert('Details saved! Now upload your certificate', 'success');
+    });
+
+    chooseFileBtn.onclick = () => fileInput.click();
+    fileInput.onchange = () => {
+        const file = fileInput.files[0];
+        if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            if (file.type.startsWith('image/')) {
-                preview.innerHTML = `<img src="${e.target.result}" class="preview-img">`;
-            } else {
-                preview.innerHTML = `<iframe src="${e.target.result}" class="w-full h-48 border rounded"></iframe>`;
-            }
+        reader.onload = e => {
+            previewContent.innerHTML = file.type.startsWith('image/')
+                ? `<img src="${e.target.result}" class="preview-img">`
+                : `<iframe src="${e.target.result}" class="w-full h-96 border-2 rounded-xl"></iframe>`;
             previewContainer.classList.remove('hidden');
-            submitBtn.disabled = false;
-            // Attach file to input
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            fileInput.files = dataTransfer.files;
-            // Pre-fill name with sanitized filename (without extension)
-            const sanitizedName = file.name.replace(/\.[^/.]+$/, "");  // Remove extension
-            docNameInput.value = sanitizedName;
-            docNameInput.focus();
-            // Show remove button
-            if (removeBtn) removeBtn.style.display = 'inline-block';
-            // Validate initial name
-            validateName();
+            removeBtn.classList.remove('hidden');
+            docName.value = file.name.replace(/\.[^/.]+$/, "").substring(0,20);
         };
         reader.readAsDataURL(file);
-    }
+    };
 
-    // Name validation
-    function validateName() {
-        const name = docNameInput.value.trim();
-        if (name === '') {
-            nameError.textContent = 'Document name is required.';
-            nameError.classList.remove('hidden');
-            submitBtn.disabled = true;
-            return false;
-        } else if (name.length > 20) {
-            nameError.textContent = 'Name must be 20 characters or less.';
-            nameError.classList.remove('hidden');
-            submitBtn.disabled = true;
-            return false;
-        } else {
-            nameError.classList.add('hidden');
-            submitBtn.disabled = false;
-            return true;
-        }
-    }
+    removeBtn.onclick = () => {
+        fileInput.value = ''; previewContent.innerHTML = ''; previewContainer.classList.add('hidden'); removeBtn.classList.add('hidden');
+    };
 
-    docNameInput.addEventListener('input', validateName);
-
-    // Remove File Function
-    if (removeBtn) {
-        removeBtn.addEventListener('click', () => {
-            fileInput.value = '';  // Clear input
-            docNameInput.value = '';  // Clear name
-            preview.innerHTML = '';  // Clear preview
-            previewContainer.classList.add('hidden');
-            nameError.classList.add('hidden');
-            submitBtn.disabled = true;
-            removeBtn.style.display = 'none';
-        });
-    }
-
-    // Upload Form Submit - Opens Modal
-    document.getElementById('uploadForm').addEventListener('submit', (e) => {
+    mainSubmitBtn.onclick = async e => {
         e.preventDefault();
-        if (!validateName()) {
-            showAlert('Please enter a valid document name (max 20 characters).', 'error');
-            return;
-        }
-        if (!fileInput.files || fileInput.files.length === 0) {
-            showAlert('Please select a file first.', 'error');
-            return;
-        }
-        showModal();
-    });
+        if (!certificateDetails) return showAlert('Fill details first', 'error');
+        if (!fileInput.files[0]) return showAlert('Choose a file', 'error');
+        if (!docName.value.trim() || docName.value.length > 20) return showAlert('Enter valid document name (max 20)', 'error');
 
-    // Submit Modal Form Submit - Actual Upload
-    document.getElementById('modalForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!validateModalForm()) {
-            return;
-        }
+        const fd = new FormData();
+        fd.append('file', fileInput.files[0]);
+        fd.append('doc_name', docName.value.trim());
+        Object.entries(certificateDetails).forEach(([k,v]) => fd.append(k, v));
 
-        // Get course_type value
-        const courseTypeSelect = document.getElementById('courseType');
-        let courseType = courseTypeSelect.value;
-        if (courseType === 'other') {
-            courseType = document.getElementById('courseTypeOther').value.trim();
-        }
-
-        // Create form data
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        formData.append('doc_name', docNameInput.value.trim());
-        formData.append('applicant_name', document.getElementById('applicantName').value.trim());
-        formData.append('course_name', document.getElementById('courseName').value.trim());
-        formData.append('organization_name', document.getElementById('organizationName').value);
-        formData.append('course_type', courseType);
-        formData.append('index_number', document.getElementById('indexNumber').value.trim());
-
-        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
-        modalSubmitBtn.disabled = true;
-        modalSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+        mainSubmitBtn.disabled = true;
+        mainSubmitBtn.textContent = 'Submitting...';
 
         try {
-            const response = await fetch('/claim', { method: 'POST', body: formData });
-            const data = await response.json();
-            if (data.error) {
-                showAlert(data.error, 'error');
-            } else {
-                showAlert(data.message, 'success');
-                confettiBurst();
-                closeModal();
-                // Clear upload form
-                removeBtn.click();
-                setTimeout(() => location.reload(), 2000);
-            }
-        } catch (error) {
-            showAlert('Upload failed. Please try again.', 'error');
-        } finally {
-            modalSubmitBtn.disabled = false;
-            modalSubmitBtn.innerHTML = 'OK';
+            const res = await fetch('/claim', {method: 'POST', body: fd});
+            const data = await res.json();
+            showAlert(data.message || 'Submitted successfully!', 'success');
+            confetti({particleCount: 220, spread: 80, origin: {y: 0.6}});
+            setTimeout(() => location.reload(), 2800);
+        } catch { showAlert('Upload failed', 'error'); }
+        finally { mainSubmitBtn.disabled = false; mainSubmitBtn.textContent = 'Submit for Review'; }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const sec = document.getElementById('verifiedSection');
+        if (sec && '{{ verified_badges|length }}' > 0) {
+            new IntersectionObserver(e => {
+                if (e[0].isIntersecting) confetti({particleCount: 180, spread: 70, origin: {y: 0.6}, colors: ['#CE1126','#FCD116']});
+            }, {threshold: 0.3}).observe(sec);
         }
     });
-
-    // Update Modal Form Submit
-    document.getElementById('updateModalForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!validateUpdateModalForm()) {
-            return;
-        }
-
-        // Get course_type value
-        const updateCourseTypeSelect = document.getElementById('updateCourseType');
-        let courseType = updateCourseTypeSelect.value;
-        if (courseType === 'other') {
-            courseType = document.getElementById('updateCourseTypeOther').value.trim();
-        }
-
-        // Create form data
-        const formData = new FormData();
-        formData.append('doc_name', document.getElementById('updateDocName').value.trim());
-        formData.append('applicant_name', document.getElementById('updateApplicantName').value.trim());
-        formData.append('course_name', document.getElementById('updateCourseName').value.trim());
-        formData.append('organization_name', document.getElementById('updateOrganizationName').value);
-        formData.append('course_type', courseType);
-        formData.append('index_number', document.getElementById('updateIndexNumber').value.trim());
-
-        const uploadId = document.getElementById('updateUploadId').value;
-        const updateModalSubmitBtn = document.getElementById('updateModalSubmitBtn');
-        updateModalSubmitBtn.disabled = true;
-        updateModalSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Updating...';
-
-        try {
-            const response = await fetch(`/update_upload/${uploadId}`, { method: 'POST', body: formData });
-            const data = await response.json();
-            if (data.error) {
-                showAlert(data.error, 'error');
-            } else {
-                showAlert(data.message, 'success');
-                confettiBurst();
-                closeUpdateModal();
-                setTimeout(() => location.reload(), 2000);
-            }
-        } catch (error) {
-            showAlert('Update failed. Please try again.', 'error');
-        } finally {
-            updateModalSubmitBtn.disabled = false;
-            updateModalSubmitBtn.innerHTML = 'Update';
-        }
-    });
-
-    // Confetti Celebration
-    function confettiBurst() {
-        confetti({
-            particleCount: 150,
-            spread: 60,
-            origin: { y: 0.6 },
-            colors: ['#CE1126', '#FCD116', '#FFFFFF', '#FFD700']
-        });
-    }
-
-    // Scroll-triggered confetti for Verified Badges (only if badges exist)
-    {% if verified_badges %}
-    let confettiTriggered = false;
-    const verifiedSection = document.getElementById('verifiedSection');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting && !confettiTriggered) {
-                confettiBurst();
-                confettiTriggered = true;
-            }
-        });
-    }, { threshold: 0.5 });
-
-    if (verifiedSection) observer.observe(verifiedSection);
-    {% endif %}
 </script>
 </body>
 </html>
