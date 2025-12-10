@@ -699,33 +699,54 @@ def update_upload(upload_id):
 @require_login
 def verify_upload(upload_id):
     user_id = session['user_id']
+
     try:
-        upload_ref = db.collection(f'users/{user_id}/uploads').document(upload_id)
+        # Reference to the document in uploads
+        upload_ref = db.collection('users').document(user_id).collection('uploads').document(upload_id)
         upload_doc = upload_ref.get()
+
         if not upload_doc.exists:
             return jsonify({"error": "Upload not found"}), 404
 
-        upload_data = upload_doc.to_dict()
-        doc_id = upload_doc.id
+        data = upload_doc.to_dict()
 
-        # Copy to credentials
-        credentials_ref = db.collection(f'users/{user_id}/credentials').document(doc_id)
-        credentials_data = {
-            **upload_data,
+        # === MOVE TO CREDENTIALS (same document ID) ===
+        cred_ref = db.collection('users').document(user_id).collection('credentials').document(upload_id)
+
+        # Prepare clean credential data
+        credential_data = {
+            'title': data.get('title', 'Certificate'),
+            'issuer': data.get('university', 'TruPas'),
+            'badge_url': data.get('file_url'),
+            'file_url': data.get('file_url'),
             'status': 'verified',
-            'issuer': upload_data.get('organization_name', 'Issuer'),
-            'badge_url': upload_data['file_url'],  # Use file_url as badge
-            'verified_at': firestore.SERVER_TIMESTAMP
+            'created_at': data.get('created_at', firestore.SERVER_TIMESTAMP),
+            'verified_at': firestore.SERVER_TIMESTAMP,
+            'applicant_name': data.get('applicant_name'),
+            'course_name': data.get('course_name'),
+            'course_type': data.get('course_type', 'Not specified'),
+            'province': data.get('province'),
+            'university': data.get('university'),
+            'index_number': data.get('index_number'),
+            'unique_id': data.get('unique_id', str(uuid.uuid4())),
         }
-        credentials_ref.set(credentials_data)
 
-        # Delete from uploads
-        upload_ref.delete()
+        # === ATOMIC MOVE USING BATCH (recommended over transaction for simple move) ===
+        batch = db.batch()
+        batch.set(cred_ref, credential_data)      # Create in credentials
+        batch.delete(upload_ref)                  # Delete from uploads
+        batch.commit()  # Execute both operations together
 
-        return jsonify({"message": f"Upload '{upload_data['title']}' verified and moved to credentials!"})
+        logger.info(f"Successfully moved upload {upload_id} to credentials for user {user_id}")
+
+        return jsonify({
+            "message": "Certificate verified and added to your achievements!",
+            "success": True
+        })
+
     except Exception as e:
-        logger.error(f"Verify error: {str(e)}")
-        return jsonify({"error": f"Failed to verify: {str(e)}"}), 500
+        logger.error(f"Verify upload failed: {str(e)}", exc_info=True)
+        return jsonify({"error": "Failed to verify. Check server logs."}), 500
 
 @app.route('/share', methods=['GET'])
 @require_login

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruPas Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; min-height: 100vh; }
+        .card { transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card:hover { transform: translateY(-20px) scale(1.03); box-shadow: 0 30px 70px rgba(0,0,0,0.5); }
+        .toggle { position: relative; display: inline-block; width: 90px; height: 46px; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #334155; transition: .4s; border-radius: 50px; }
+        .slider:before { position: absolute; content: ""; height: 38px; width: 38px; left: 4px; bottom: 4px; background: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background: #10b981; }
+        input:checked + .slider:before { transform: translateX(44px); }
+        .glow { animation: glow 4s infinite alternate; }
+        @keyframes glow { from { box-shadow: 0 0 30px rgba(252,209,22,0.4); } to { box-shadow: 0 0 60px rgba(252,209,22,0.8); } }
+    </style>
+</head>
+<body class="p-8">
+<div class="max-w-7xl mx-auto">
+    <div class="text-center mb-12 pt-8">
+        <h1 class="text-6xl font-bold bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 bg-clip-text text-transparent">
+            TruPas Admin Panel
+        </h1>
+        <p class="text-2xl mt-4 opacity-90">Toggle to verify • Click Done when finished</p>
+    </div>
+
+    {% if pending|length == 0 %}
+    <div class="text-center py-32 bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded-3xl backdrop-blur">
+        <i class="fas fa-trophy text-9xl text-yellow-400 mb-8"></i>
+        <h2 class="text-5xl font-bold mb-4">All Certificates Verified!</h2>
+        <p class="text-3xl opacity-90">Great job, boss!</p>
+    </div>
+    {% else %}
+    <div class="space-y-10">
+        {% for item in pending %}
+        <div class="card bg-white/10 backdrop-blur-xl rounded-3xl p-10 border border-white/20 glow">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-10">
+                <div class="text-left flex-1">
+                    <div class="flex items-center gap-8 mb-6">
+                        <div class="w-24 h-24 bg-gradient-to-br from-red-600 to-yellow-500 rounded-3xl flex items-center justify-center text-5xl font-black text-white shadow-2xl">
+                            {{ loop.index }}
+                        </div>
+                        <div>
+                            <h2 class="text-4xl font-bold">{{ item.course_name }}</h2>
+                            <p class="text-2xl opacity-90 mt-2">{{ item.applicant_name }}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xl">
+                        <div><strong>User:</strong> {{ item.display_name }}</div>
+                        <div><strong>Email:</strong> {{ item.email }}</div>
+                        <div><strong>University:</strong> {{ item.university }}</div>
+                        <div><strong>Index No:</strong> {{ item.index_number }}</div>
+                        <div><strong>Province:</strong> {{ item.province }}</div>
+                        <div><strong>Submitted:</strong> {{ item.created_at.strftime('%d %b %Y') if item.created_at else '—' }}</div>
+                    </div>
+                    <a href="{{ item.file_url }}" target="_blank" class="inline-block mt-8 px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-bold text-lg transition shadow-xl">
+                        Open Certificate
+                    </a>
+                </div>
+
+                <div class="text-center">
+                    <label class="toggle">
+                        <input type="checkbox" class="verify-toggle" data-user="{{ item.user_id }}" data-id="{{ item.doc_id }}">
+                        <span class="slider round"></span>
+                    </label>
+                    <p class="text-3xl font-bold mt-6 text-yellow-400">VERIFY</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="text-center mt-20">
+        <button id="doneBtn" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-5xl font-bold py-10 px-32 rounded-full shadow-2xl transform hover:scale-110 transition duration-500">
+            DONE
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.querySelectorAll('.verify-toggle').forEach(toggle => {
+        toggle.addEventListener('change', async function() {
+            if (!this.checked) return;
+
+            const userId = this.dataset.user;
+            const docId = this.dataset.id;
+            const card = this.closest('.card');
+            const input = this;
+
+            try {
+                const response = await fetch(`/admin/verify/${userId}/${docId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (data.message) {
+                    // Success animation
+                    card.style.transition = 'all 1s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.8)';
+                    setTimeout(() => card.remove(), 1000);
+                    confetti({
+                        particleCount: 200,
+                        spread: 90,
+                        origin: { y: 0.6 },
+                        colors: ['#CE1126', '#FCD116', '#10b981']
+                    });
+                    // Lock the toggle permanently
+                    input.disabled = true;
+                } else {
+                    alert('Error: ' + (data.error || 'Verification failed'));
+                    input.checked = false;
+                }
+            } catch (err) {
+                alert('Network error. Check console.');
+                input.checked = false;
+            }
+        });
+    });
+
+    document.getElementById('doneBtn')?.addEventListener('click', () => {
+        confetti({
+            particleCount: 600,
+            spread: 120,
+            origin: { y: 0.6 },
+            colors: ['#CE1126', '#FCD116', '#000000', '#10b981']
+        });
+        setTimeout(() => alert('Students have been verified successfully!'), 800);
+    });
+</script>
+</body>
+</html>
