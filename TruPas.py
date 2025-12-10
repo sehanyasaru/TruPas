@@ -328,10 +328,17 @@ def home():
             cred_data['id'] = doc.id
             pending_credentials.append(cred_data)
 
+        # Count unread notifications
+        noti_ref = db.collection(f'users/{user_id}/notifications')
+        notifications = [doc.to_dict() for doc in noti_ref.stream()]
+
+        unread_count = len(notifications)
+
         return render_template('TruPas_home.html',
                                credentials=credentials,
                                pending_credentials=pending_credentials,
-                               first_name=first_name)
+                               first_name=first_name,
+                               unread_count=unread_count)
     except Exception as e:
         logger.error(f"Firestore error in home: {str(e)}")
         flash('Failed to load data. Please try again.', 'error')
@@ -839,5 +846,46 @@ def DHERST_login():
         logger.error(f"Login error: {str(e)}")
         return jsonify({"error": f"Failed to log in: {str(e)}"}), 500
 
+
+##Notification section
+@app.route("/notifications")
+@require_login
+def notifications_json():
+    user_id = session["user_id"]
+    notif_ref = db.collection(f"users/{user_id}/notifications").order_by("created_at", direction=firestore.Query.DESCENDING)
+    docs = notif_ref.stream()
+
+    notifications = []
+    for doc in docs:
+        d = doc.to_dict()
+        notifications.append({
+            "id": doc.id,
+            "title": d.get("title", ""),
+            "message": d.get("message", ""),
+            "date": d.get("created_at").strftime("%d %b %Y") if d.get("created_at") else ""
+        })
+
+    return jsonify(notifications)
+
+
+##Delete notofication
+@app.route('/delete_notification/<notif_id>', methods=['POST'])
+def delete_notification(notif_id):
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({"success": False, "error": "Not logged in"})
+
+    try:
+        notif_ref = db.collection('users').document(user_id).collection('notifications').document(notif_id)
+        notif_ref.delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)

@@ -1,288 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TruPas - User's Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #ffffff; /* White background */
+      }
+      .gradient-bg {
+        background: linear-gradient(
+          135deg,
+          #ce1126 0%,
+          #fcd116 50%,
+          #000000 100%
+        ); /* Red-Yellow-Black gradient */
+      }
+      .card-gradient {
+        background: linear-gradient(135deg, #fcd116 20%, #ce1126 100%);
+        color: #ffffff;
+        border-radius: 1rem; /* more rounded corners */
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); /* subtle shadow for depth */
+        transition: transform 0.3s ease, box-shadow 0.3s ease; /* smooth hover effects */
+        padding: 1.5rem; /* slightly larger padding */
+      }
 
-                            <!DOCTYPE html>
-                            <html lang="en">
-                            <head>
-                                <meta charset="UTF-8">
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                <title>TruPas - User's Dashboard</title>
-                                <script src="https://cdn.tailwindcss.com"></script>
-                                <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-                                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-                                <style>
-                                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-                                    body {
-                                        font-family: 'Inter', sans-serif;
-                                        background-color: #FFFFFF; /* White background */
-                                    }
-                                    .gradient-bg {
-                                        background: linear-gradient(135deg, #CE1126 0%, #FCD116 50%, #000000 100%); /* Red-Yellow-Black gradient */
-                                    }
-                                    .card-gradient {
-                                        background: linear-gradient(135deg, #FFFFFF 0%, #FCD116 20%, #CE1126 100%); /* White to Yellow to Red */
-                                        color: #FFFFFF; /* White text on gradient */
-                                    }
-                                    .glow {
-                                        box-shadow: 0 0 20px rgba(252, 209, 22, 0.5); /* Yellow glow */
-                                    }
-                                    .animate-fade-in {
-                                        animation: fadeIn 0.8s ease-in-out;
-                                    }
-                                    @keyframes fadeIn {
-                                        from { opacity: 0; transform: translateY(20px); }
-                                        to { opacity: 1; transform: translateY(0); }
-                                    }
-                                    .hover-scale {
-                                        transition: transform 0.3s ease;
-                                    }
-                                    .hover-scale:hover {
-                                        transform: scale(1.05);
-                                    }
-                                    .logo-img {
-                                        width: 120px;
-                                        height: 120px;
-                                        object-fit: contain;
-                                        filter: drop-shadow(0 0 5px rgba(206, 17, 38, 0.3)); /* Subtle red shadow */
-                                    }
-                                    /* Empty State Animation */
-                                    .empty-state-icon {
-                                        animation: bounce 2s infinite;
-                                    }
-                                    @keyframes bounce {
-                                        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                                        40% { transform: translateY(-10px); }
-                                        60% { transform: translateY(-5px); }
-                                    }
-                                    .empty-state-glow {
-                                        animation: pulse 2s infinite;
-                                    }
-                                    @keyframes pulse {
-                                        0% { box-shadow: 0 0 0 0 rgba(252, 209, 22, 0.7); }
-                                        70% { box-shadow: 0 0 0 10px rgba(252, 209, 22, 0); }
-                                        100% { box-shadow: 0 0 0 0 rgba(252, 209, 22, 0); }
-                                    }
-                                    /* Preview Fallback */
-                                    .preview-fallback {
-                                        background: #f3f4f6;
-                                        border: 2px dashed #d1d5db;
-                                        border-radius: 8px;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        height: 128px;
-                                        color: #6b7280;
-                                    }
-                                </style>
-                            </head>
-                            <body class="bg-white min-h-screen">
+      .card-gradient:hover {
+        transform: translateY(-5px); /* lift on hover */
+        box-shadow: 0 15px 25px rgba(0, 0, 0, 0.25); /* deeper shadow */
+      }
 
-                            <!-- Navigation Sidebar -->
-                            <div class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-white to-gray-50 shadow-lg">
-                                <div class="p-6">
-                                    <!-- TruPas Logo and Title, Centered -->
-                                    <div class="flex justify-center items-center mb-8">
-                                        <img src="{{ url_for('static', filename='uploads/logo_new.jpg') }}" alt="TruPas Logo" class="logo-img">
-                                    </div>
+      .card-gradient i {
+        font-size: 2.5rem; /* professional icon size */
+        margin-bottom: 1rem;
+      }
 
-                                    <nav class="space-y-4">
-                                        <a href="/home" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-black hover-scale">
-                                            <i class="fas fa-home mr-3 text-red-600"></i> Dashboard
-                                        </a>
-                                        <a href="/claim" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-black hover-scale">
-                                            <i class="fas fa-medal mr-3 text-yellow-500"></i> Claim Badges
-                                        </a>
-                                        <!--            <a href="/credentials" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-black hover-scale">-->
-                                        <!--                <i class="fas fa-list mr-3 text-red-600"></i> My Credentials-->
-                                        <!--            </a>-->
-                                        <a href="/dashboard" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-black hover-scale">
-                                            <i class="fas fa-chart-bar mr-3 text-yellow-500"></i> Analytics
-                                        </a>
-                                        <a href="/profile" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-black hover-scale">
-                                            <i class="fas fa-user mr-3 text-red-600"></i> Profile
-                                        </a>
-                                        <a href="/logout" class="flex items-center p-3 rounded-lg hover:bg-red-100 text-red-600 hover-scale">
-                                            <i class="fas fa-sign-out-alt mr-3"></i> Logout
-                                        </a>
-                                    </nav>
-                                </div>
-                            </div>
+      .card-gradient h3 {
+        font-size: 1.25rem; /* slightly bigger, bold */
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
 
-                            <!-- Main Content -->
-                            <div class="ml-64 p-6">
-                                <!-- Header with User's Name -->
-                                <header class="flex justify-between items-center mb-8 animate-fade-in">
-                                    <h2 class="text-3xl font-bold text-black">Welcome, {{ first_name }}!</h2>
-                                    <div class="bg-gradient-to-r from-red-600 to-yellow-400 text-white px-4 py-2 rounded-lg hover-scale">
-                                        <i class="fas fa-bell mr-2"></i> Notifications
-                                    </div>
-                                </header>
+      .card-gradient p {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+      }
 
-                                <!-- Quick Actions -->
-                                <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                    <div class="card-gradient p-6 rounded-xl text-white glow hover-scale animate-fade-in">
-                                        <i class="fas fa-medal text-4xl mb-4"></i>
-                                        <h3 class="text-xl font-semibold mb-2">Claim New Badge</h3>
-                                        <p class="opacity-90 mb-4">Ready to claim your latest achievement?</p>
-                                        <a href="/claim" class="bg-black text-yellow-400 px-4 py-2 rounded-lg font-semibold hover-scale">Claim Now</a>
-                                    </div>
-                                    <div class="card-gradient p-6 rounded-xl text-white glow hover-scale animate-fade-in" style="animation-delay: 0.1s;">
-                                        <i class="fas fa-share-alt text-4xl mb-4"></i>
-                                        <h3 class="text-xl font-semibold mb-2">Share Credential</h3>
-                                        <p class="opacity-90 mb-4">Showcase on LinkedIn or social media.</p>
-                                        <a href="/share" class="bg-black text-yellow-400 px-4 py-2 rounded-lg font-semibold hover-scale">Share</a>
-                                    </div>
-                                    <div class="card-gradient p-6 rounded-xl text-white glow hover-scale animate-fade-in" style="animation-delay: 0.2s;">
-                                        <i class="fas fa-download text-4xl mb-4"></i>
-                                        <h3 class="text-xl font-semibold mb-2">Download PDF</h3>
-                                        <p class="opacity-90 mb-4">Get your certificate as PDF.</p>
-                                        <button onclick="downloadCredential()" class="bg-black text-yellow-400 px-4 py-2 rounded-lg font-semibold hover-scale">Download</button>
-                                    </div>
-                                </section>
+      .card-gradient a,
+      .card-gradient button {
+        display: inline-block;
+        background: rgba(0, 0, 0, 0.9);
+        color: #fcd116;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
 
-                                <!-- Pending Claims (Notification Stage) -->
-                                {% if pending_credentials %}
-                                <section class="mb-8 animate-fade-in">
-                                    <h3 class="text-2xl font-bold text-black mb-4">Pending Claims</h3>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {% for cred in pending_credentials %}
-                                        <div class="bg-white border border-red-200 rounded-xl p-6 shadow-md hover-scale">
-                                            <h4 class="text-xl font-semibold text-black mb-2">{{ cred.title }}</h4>
-                                            <p class="text-gray-600 mb-4">Issuer: {{ cred.issuer }} | Date: {{ cred.issue_date }}</p>
-                                            <button onclick="claimCredential('{{ cred.id }}')" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 hover-scale">
-                                                Claim Now
-                                            </button>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                </section>
-                                {% endif %}
+      .card-gradient a:hover,
+      .card-gradient button:hover {
+        background: rgba(0, 0, 0, 1);
+        transform: scale(1.05);
+      }
 
-                                <!-- My Credentials -->
-                                <section class="animate-fade-in">
-                                    <h3 class="text-2xl font-bold text-black mb-4">My Credentials</h3>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {% for cred in credentials %}
-                                        <div class="bg-gradient-to-br from-white to-gray-50 border border-yellow-200 rounded-xl p-6 shadow-lg hover-scale credential-card" data-id="{{ cred.id }}">
-                                            <!-- Preview: Use <img> for images, fallback iframe for PDFs -->
-                                            <div class="relative mb-4">
-                                                {% if cred.badge_url %}
-                                                {% if cred.badge_url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) %}
-                                                <img src="{{ cred.badge_url }}" alt="{{ cred.title }}" class="w-full h-32 object-cover rounded-lg" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                <div class="preview-fallback absolute inset-0 hidden">
-                                                    <i class="fas fa-image text-2xl text-gray-400"></i>
-                                                </div>
-                                                {% else %}
-                                                <!-- PDF or other: Use iframe for preview -->
-                                                <iframe src="{{ cred.badge_url }}" class="w-full h-32 rounded-lg" frameborder="0" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"></iframe>
-                                                <div class="preview-fallback absolute inset-0 hidden">
-                                                    <i class="fas fa-file-pdf text-2xl text-red-400"></i>
-                                                </div>
-                                                {% endif %}
-                                                {% else %}
-                                                <div class="preview-fallback w-full h-32">
-                                                    <i class="fas fa-certificate text-4xl text-gray-400"></i>
-                                                    <p class="text-gray-500 text-sm">No preview available</p>
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                            <h4 class="text-xl font-semibold text-black mb-2">{{ cred.title }}</h4>
-                                            <p class="text-gray-600 mb-2">Issuer: {{ cred.issuer or 'Unknown' }}</p>
-                                            <p class="text-gray-500 text-sm mb-4">
-                                                Status: <span class="text-{{ 'green-600' if cred.status == 'verified' else 'yellow-600' }} font-semibold">{{ cred.status | title }}</span>
-                                            </p>
-                                            <div class="flex space-x-2">
-                                                <a href="/download/{{ cred.id }}" class="bg-yellow-400 text-black px-3 py-1 rounded text-sm font-semibold hover-scale flex-1 text-center">
-                                                    <i class="fas fa-download mr-1"></i> Download
-                                                </a>
-                                                <a href="/share/{{ cred.id }}" class="bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold hover-scale flex-1 text-center">
-                                                    <i class="fas fa-share mr-1"></i> Share
-                                                </a>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                    {% if not credentials %}
-                                    <!-- Enhanced Empty State with Animations -->
-                                    <div class="text-center py-16 bg-gradient-to-br from-yellow-50 to-red-50 rounded-xl p-8 shadow-lg animate-fade-in empty-state-glow">
-                                        <div class="empty-state-icon">
-                                            <i class="fas fa-certificate text-8xl text-yellow-400 mb-6"></i>
-                                        </div>
-                                        <h3 class="text-2xl font-bold text-black mb-4">No Credentials Yet!</h3>
-                                        <p class="text-gray-600 text-lg mb-8">Start your journey by claiming your first achievement and build your digital portfolio.</p>
-                                        <a href="/claim" class="bg-red-600 text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-red-700 transition duration-300 hover-scale shadow-lg">
-                                            <i class="fas fa-medal-star mr-2"></i> Claim Your First Badge
-                                        </a>
-                                    </div>
-                                    {% endif %}
-                                </section>
-                            </div>
+      .glow {
+        box-shadow: 0 0 20px rgba(252, 209, 22, 0.5); /* Yellow glow */
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.8s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .hover-scale {
+        transition: transform 0.3s ease;
+      }
+      .hover-scale:hover {
+        transform: scale(1.05);
+      }
+      .logo-img {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+      }
+      /* Empty State Animation */
+      .empty-state-icon {
+        animation: bounce 2s infinite;
+      }
+      @keyframes bounce {
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(-5px);
+        }
+      }
+      .empty-state-glow {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(252, 209, 22, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(252, 209, 22, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(252, 209, 22, 0);
+        }
+      }
+      /* Preview Fallback */
+      .preview-fallback {
+        background: #f3f4f6;
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 128px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body class="bg-white min-h-screen">
+    <!-- Navigation Sidebar -->
+    <div
+      class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-white to-gray-50 shadow-xl flex flex-col justify-between"
+    >
+      <div class="p-6">
+        <div class="flex justify-center items-center mb-10">
+          <img
+            src="{{ url_for('static', filename='uploads/logo_new.jpg') }}"
+            alt="TruPas Logo"
+            class="w-36 h-auto"
+          />
+        </div>
+        <nav class="space-y-4">
+          <a
+            href="/home"
+            class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300"
+          >
+            <i class="fas fa-home mr-3 text-red-600"></i> Dashboard
+          </a>
+          <a
+            href="/claim"
+            class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300"
+          >
+            <i class="fas fa-medal mr-3 text-yellow-500"></i> Claim Badges
+          </a>
+          <a
+            href="/dashboard"
+            class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300"
+          >
+            <i class="fas fa-chart-bar mr-3 text-yellow-500"></i> Analytics
+          </a>
+          <a
+            href="/profile"
+            class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300"
+          >
+            <i class="fas fa-user mr-3 text-red-600"></i> Profile
+          </a>
+        </nav>
+      </div>
 
-                            <script>
-                                // Confetti celebration when credentials exist
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    const credentials = document.querySelectorAll('.credential-card');
-                                    if (credentials.length > 0) {
-                                        confetti({
-                                            particleCount: 100,
-                                            spread: 70,
-                                            origin: { y: 0.6 },
-                                            colors: ['#CE1126', '#FCD116', '#FFFFFF']
-                                        });
-                                    }
+      <!-- Bottom Section: Logout -->
+      <div class="p-6">
+        <a
+          href="/logout"
+          class="flex items-center p-3 rounded-lg hover:bg-red-100 text-red-600 hover:shadow-md transition-all duration-300"
+        >
+          <i class="fas fa-sign-out-alt mr-3"></i> Logout
+        </a>
+      </div>
+    </div>
 
-                                    // Add data-id to credential cards for dynamic JS
-                                    document.querySelectorAll('.credential-card').forEach(card => {
-                                        const link = card.querySelector('a[href*="/download/"]');
-                                        if (link) {
-                                            card.dataset.id = link.href.split('/').pop();
-                                        }
-                                    });
-                                });
+    <!-- Main Content -->
+    <div class="ml-64 p-6">
+      <header
+        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 animate-fade-in gap-4"
+      >
+        <h2 class="text-4xl md:text-3xl font-extrabold text-gray-900">
+          Welcome, {{ first_name }}!
+        </h2>
+        <button
+          onclick="openNotifModal()"
+          class="relative flex items-center gap-2 bg-gradient-to-r from-red-600 to-yellow-400 text-white px-5 py-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+        >
+          <i class="fas fa-bell text-lg"></i> Notifications {% if unread_count >
+          0 %}
+          <span
+            class="absolute -top-2 -right-2 bg-red-700 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow"
+          >
+            {{ unread_count }}
+          </span>
+          {% endif %}
+        </button>
+      </header>
 
-                                function claimCredential(credId) {
-                                    fetch(`/claim/${credId}`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' }
-                                    })
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            alert(data.message);
-                                            location.reload();
-                                        })
-                                        .catch(error => alert('Error claiming credential: ' + error));
-                                }
+      <!-- Quick Actions -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card-gradient hover-scale animate-fade-in">
+          <i class="fas fa-medal"></i>
+          <h3>Claim New Badge</h3>
+          <p>Ready to claim your latest achievement?</p>
+          <a href="/claim">Claim Now</a>
+        </div>
 
-                                function downloadCredential() {
-                                    const firstCredId = document.querySelector('.credential-card')?.dataset.id || null;
-                                    if (firstCredId) {
-                                        window.open(`/download/${firstCredId}`, '_blank');
-                                    } else {
-                                        alert('No credentials available to download.');
-                                    }
-                                }
+        <div
+          class="card-gradient hover-scale animate-fade-in"
+          style="animation-delay: 0.1s"
+        >
+          <i class="fas fa-share-alt"></i>
+          <h3>Share Credential</h3>
+          <p>Showcase on LinkedIn or social media.</p>
+          <a href="/share">Share</a>
+        </div>
 
-                                function shareCredential() {
-                                    const firstCredId = document.querySelector('.credential-card')?.dataset.id || null;
-                                    if (!firstCredId) {
-                                        alert('No credentials available to share.');
-                                        return;
-                                    }
-                                    fetch(`/share/${firstCredId}`)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            if (navigator.share) {
-                                                navigator.share({
-                                                    title: data.title,
-                                                    text: data.message,
-                                                    url: data.share_url
-                                                });
-                                            } else {
-                                                navigator.clipboard.writeText(data.message).then(() => {
-                                                    alert('Copied to clipboard! Share the message with your network.');
-                                                });
-                                            }
-                                        })
-                                        .catch(error => alert('Error sharing: ' + error));
-                                }
-                            </script>
-                            </body>
-                            </html>
+        <div
+          class="card-gradient hover-scale animate-fade-in"
+          style="animation-delay: 0.2s"
+        >
+          <i class="fas fa-download"></i>
+          <h3>Download PDF</h3>
+          <p>Get your certificate as PDF.</p>
+          <button onclick="downloadCredential()">Download</button>
+        </div>
+      </section>
+
+      <!-- Pending Claims (Notification Stage) -->
+      {% if pending_credentials %}
+      <section class="mb-8 animate-fade-in">
+        <h3 class="text-2xl font-bold text-black mb-4">Pending Claims</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for cred in pending_credentials %}
+          <div
+            class="bg-white border border-red-200 rounded-xl p-6 shadow-md hover-scale"
+          >
+            <h4 class="text-xl font-semibold text-black mb-2">
+              {{ cred.title }}
+            </h4>
+            <p class="text-gray-600 mb-4">
+              Issuer: {{ cred.issuer }} | Date: {{ cred.issue_date }}
+            </p>
+            <button
+              onclick="claimCredential('{{ cred.id }}')"
+              class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 hover-scale"
+            >
+              Claim Now
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- My Credentials -->
+      <section class="animate-fade-in">
+        <h3 class="text-2xl font-bold text-black mb-4">My Credentials</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for cred in credentials %}
+          <div
+            class="bg-gradient-to-br from-white to-gray-50 border border-yellow-200 rounded-xl p-6 shadow-lg hover-scale credential-card"
+            data-id="{{ cred.id }}"
+          >
+            <!-- Preview: Use <img> for images, fallback iframe for PDFs -->
+            <div class="relative mb-4">
+              {% if cred.badge_url %} {% if cred.badge_url.endswith(('.jpg',
+              '.jpeg', '.png', '.gif', '.webp')) %}
+              <img
+                src="{{ cred.badge_url }}"
+                alt="{{ cred.title }}"
+                class="w-full h-32 object-cover rounded-lg"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              />
+              <div class="preview-fallback absolute inset-0 hidden">
+                <i class="fas fa-image text-2xl text-gray-400"></i>
+              </div>
+              {% else %}
+              <!-- PDF or other: Use iframe for preview -->
+              <iframe
+                src="{{ cred.badge_url }}"
+                class="w-full h-32 rounded-lg"
+                frameborder="0"
+                loading="lazy"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              ></iframe>
+              <div class="preview-fallback absolute inset-0 hidden">
+                <i class="fas fa-file-pdf text-2xl text-red-400"></i>
+              </div>
+              {% endif %} {% else %}
+              <div class="preview-fallback w-full h-32">
+                <i class="fas fa-certificate text-4xl text-gray-400"></i>
+                <p class="text-gray-500 text-sm">No preview available</p>
+              </div>
+              {% endif %}
+            </div>
+            <h4 class="text-xl font-semibold text-black mb-2">
+              {{ cred.title }}
+            </h4>
+            <p class="text-gray-600 mb-2">
+              Issuer: {{ cred.issuer or 'Unknown' }}
+            </p>
+            <p class="text-gray-500 text-sm mb-4">
+              Status:
+              <span
+                class="text-{{ 'green-600' if cred.status == 'verified' else 'yellow-600' }} font-semibold"
+                >{{ cred.status | title }}</span
+              >
+            </p>
+            <div class="flex space-x-2">
+              <a
+                href="/download/{{ cred.id }}"
+                class="bg-yellow-400 text-black px-3 py-1 rounded text-sm font-semibold hover-scale flex-1 text-center"
+              >
+                <i class="fas fa-download mr-1"></i> Download
+              </a>
+              <a
+                href="/share/{{ cred.id }}"
+                class="bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold hover-scale flex-1 text-center"
+              >
+                <i class="fas fa-share mr-1"></i> Share
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if not credentials %}
+        <!-- Enhanced Empty State with Animations -->
+        <div
+          class="text-center py-16 bg-gradient-to-br from-yellow-50 to-red-50 rounded-xl p-8 shadow-lg animate-fade-in empty-state-glow"
+        >
+          <div class="empty-state-icon">
+            <i class="fas fa-certificate text-8xl text-yellow-400 mb-6"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-black mb-4">
+            No Credentials Yet!
+          </h3>
+          <p class="text-gray-600 text-lg mb-8">
+            Start your journey by claiming your first achievement and build your
+            digital portfolio.
+          </p>
+          <a
+            href="/claim"
+            class="bg-red-600 text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-red-700 transition duration-300 hover-scale shadow-lg"
+          >
+            <i class="fas fa-medal-star mr-2"></i> Claim Your First Badge
+          </a>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <!-- Notification Sidebar Modal -->
+    <div
+      id="notifModal"
+      class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl border-l border-gray-200 transform translate-x-full transition-transform duration-300 z-50"
+    >
+      <div class="p-4 border-b flex justify-between items-center">
+        <h2 class="text-xl font-bold">Notifications</h2>
+        <button
+          onclick="closeNotifModal()"
+          class="text-red-600 text-lg font-bold"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div id="notifContainer" class="p-4 space-y-4 overflow-y-auto h-full">
+        <p class="text-gray-500 text-sm">Loading...</p>
+      </div>
+    </div>
+
+    <script>
+      // Load notifications
+      function openNotifModal() {
+        document
+          .getElementById("notifModal")
+          .classList.remove("translate-x-full");
+
+        fetch("/notifications")
+          .then((res) => res.json())
+          .then((data) => {
+            const box = document.getElementById("notifContainer");
+            box.innerHTML = "";
+
+            if (data.length === 0) {
+              box.innerHTML = `<p class="text-gray-500">No notifications yet.</p>`;
+              return;
+            }
+
+            data.forEach((n) => {
+              box.innerHTML += `
+                    <div class="p-4 bg-gray-100 rounded-lg border border-gray-300">
+                        <div class="flex justify-between">
+    <h3 class="font-semibold">${n.title}</h3>
+    <button onclick="deleteNotification('${n.id}')" 
+        class="text-red-600 hover:text-red-800 text-lg">
+        <i class="fas fa-trash"></i>
+    </button>
+</div>
+
+                        <p class="text-gray-700 text-sm">${n.message}</p>
+                        <small class="text-gray-400">${n.date}</small>
+                    </div>
+                `;
+            });
+          });
+      }
+
+      function closeNotifModal() {
+        document.getElementById("notifModal").classList.add("translate-x-full");
+      }
+
+      function deleteNotification(id) {
+        fetch(`/delete_notification/${id}`, { method: "POST" })
+          .then((res) => res.json())
+          .then((data) => {
+            openNotifModal(); // reload modal automatically
+          });
+      }
+
+      // Confetti celebration when credentials exist
+      document.addEventListener("DOMContentLoaded", function () {
+        const credentials = document.querySelectorAll(".credential-card");
+        if (credentials.length > 0) {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ["#CE1126", "#FCD116", "#FFFFFF"],
+          });
+        }
+
+        // Add data-id to credential cards for dynamic JS
+        document.querySelectorAll(".credential-card").forEach((card) => {
+          const link = card.querySelector('a[href*="/download/"]');
+          if (link) {
+            card.dataset.id = link.href.split("/").pop();
+          }
+        });
+      });
+
+      function claimCredential(credId) {
+        fetch(`/claim/${credId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+            location.reload();
+          })
+          .catch((error) => alert("Error claiming credential: " + error));
+      }
+
+      function downloadCredential() {
+        const firstCredId =
+          document.querySelector(".credential-card")?.dataset.id || null;
+        if (firstCredId) {
+          window.open(`/download/${firstCredId}`, "_blank");
+        } else {
+          alert("No credentials available to download.");
+        }
+      }
+
+      function shareCredential() {
+        const firstCredId =
+          document.querySelector(".credential-card")?.dataset.id || null;
+        if (!firstCredId) {
+          alert("No credentials available to share.");
+          return;
+        }
+        fetch(`/share/${firstCredId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (navigator.share) {
+              navigator.share({
+                title: data.title,
+                text: data.message,
+                url: data.share_url,
+              });
+            } else {
+              navigator.clipboard.writeText(data.message).then(() => {
+                alert(
+                  "Copied to clipboard! Share the message with your network."
+                );
+              });
+            }
+          })
+          .catch((error) => alert("Error sharing: " + error));
+      }
+    </script>
+  </body>
+</html>

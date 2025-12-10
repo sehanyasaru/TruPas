@@ -1,178 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Western Pacific University Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Enhanced Animations */
-        @keyframes slideIn {
-            0% { transform: translateY(-50px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
+      /* Enhanced Animations */
+      @keyframes slideIn {
+        0% {
+          transform: translateY(-50px);
+          opacity: 0;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.7); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(74, 144, 226, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
         }
-        @keyframes fadeIn {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.7);
         }
-        @keyframes slideUp {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 0 0 10px rgba(74, 144, 226, 0);
         }
-        @keyframes iconPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 0 0 rgba(74, 144, 226, 0);
         }
-        @keyframes iconShake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+      }
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
         }
-        .animate-slideIn {
-            animation: slideIn 1s ease-out;
+        100% {
+          opacity: 1;
         }
-        .animate-pulse {
-            animation: pulse 2s infinite;
+      }
+      @keyframes slideUp {
+        0% {
+          transform: translateY(20px);
+          opacity: 0;
         }
-        .animate-fadeIn {
-            animation: fadeIn 2s ease-in 1s forwards;
-            opacity: 0;
+        100% {
+          transform: translateY(0);
+          opacity: 1;
         }
-        .alert-slide-up {
-            animation: slideUp 0.4s ease-out;
+      }
+      @keyframes iconPulse {
+        0%,
+        100% {
+          transform: scale(1);
         }
-        .success-icon {
-            animation: iconPulse 1.5s infinite;
+        50% {
+          transform: scale(1.1);
         }
-        .error-icon {
-            animation: iconShake 0.6s ease-out;
+      }
+      @keyframes iconShake {
+        0%,
+        100% {
+          transform: translateX(0);
         }
-        /* Logo Enhancements */
-        .logo-container {
-            position: relative;
-            display: inline-block;
-            width: 150px; /* Smaller width for the logo */
+        25% {
+          transform: translateX(-5px);
         }
-        /* Alert Styles */
-        .alert {
-            display: none;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            align-items: center;
-            gap: 0.75rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
+        75% {
+          transform: translateX(5px);
         }
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        .alert-error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        .alert-icon {
-            width: 1.25rem;
-            height: 1.25rem;
-            flex-shrink: 0;
-        }
-        /* Icon SVGs */
-        .checkmark-svg {
-            stroke-dasharray: 66;
-            stroke-dashoffset: 66;
-            stroke-width: 4;
-            stroke-miterlimit: 10;
-            stroke: #28a745;
-            fill: none;
-            animation: checkmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-        }
-        @keyframes checkmark {
-            0% { stroke-dashoffset: 66; }
-            100% { stroke-dashoffset: 0; }
-        }
-        .error-svg {
-            stroke: #dc3545;
-            fill: #dc3545;
-        }
-    </style>
-</head>
-<body class="bg-white flex items-center justify-center min-h-screen text-gray-800">
-<div class="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-lg mx-auto space-y-6" style="box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-    <!-- Enhanced Title with Subtitle -->
-    <h1 class="text-4xl md:text-5xl font-extrabold mb-4 animate-slideIn text-blue-900">
-        Login
-    </h1>
-    <p class="text-xl md:text-2xl font-semibold mb-8 animate-slideIn text-blue-700" style="animation-delay: 0.3s;">
-        Log in to your account
-    </p>
-    <!-- Enhanced Logo with Container, Centered -->
-    <div class="logo-container flex justify-center mx-auto mb-8 animate-fadeIn">
-        <img src="static/uploads/logo_new.jpg" alt="Western Pacific University Logo" class="w-full h-auto object-contain rounded-lg">
-    </div>
-    <!-- Login Form -->
-    <form id="loginForm" class="space-y-6" action="/login" method="POST">
-        <div>
-            <label for="username" class="block text-left text-sm font-medium mb-1 text-gray-700">Email (Username)</label>
-            <input type="text" id="username" name="username" class="w-full px-4 py-2 rounded-md bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300" placeholder="Enter your Gmail address" required oninput="checkEmail()">
-            <div id="emailError" class="text-red-500 text-sm mt-1 hidden"></div>
-        </div>
-        <div>
-            <label for="password" class="block text-left text-sm font-medium mb-1 text-gray-700">Password</label>
-            <input type="password" id="password" name="password" class="w-full px-4 py-2 rounded-md bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300" placeholder="Enter your password" required>
-        </div>
-        <p class="text-right text-sm text-blue-600">
-            <a href="/check-email" class="hover:underline">Forgot my password?</a>
-        </p>
-        <button type="submit" class="w-full bg-blue-600 text-white font-bold text-lg px-6 py-3 rounded-md shadow-md hover:bg-blue-700 transition duration-300">
-            Log In
-        </button>
-    </form>
-    <!-- Enhanced Alert Container -->
-    <div id="alertContainer"></div>
-    <p class="text-center text-sm text-gray-600">
-        Don't have an account? <a href="/signup" class="text-blue-600 hover:underline">Sign Up</a>
-    </p>
-</div>
+      }
+      .animate-slideIn {
+        animation: slideIn 1s ease-out;
+      }
+      .animate-pulse {
+        animation: pulse 2s infinite;
+      }
+      .animate-fadeIn {
+        animation: fadeIn 2s ease-in 1s forwards;
+        opacity: 0;
+      }
+      .alert-slide-up {
+        animation: slideUp 0.4s ease-out;
+      }
+      .success-icon {
+        animation: iconPulse 1.5s infinite;
+      }
+      .error-icon {
+        animation: iconShake 0.6s ease-out;
+      }
 
-<script>
-    // Email Validation
-    function checkEmail() {
-        const email = document.getElementById('username').value;
-        const emailError = document.getElementById('emailError');
+      /* Alert Styles */
+      .alert {
+        display: none;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      .alert-success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .alert-error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      .alert-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+      }
+      /* Icon SVGs */
+      .checkmark-svg {
+        stroke-dasharray: 66;
+        stroke-dashoffset: 66;
+        stroke-width: 4;
+        stroke-miterlimit: 10;
+        stroke: #28a745;
+        fill: none;
+        animation: checkmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+      }
+      @keyframes checkmark {
+        0% {
+          stroke-dashoffset: 66;
+        }
+        100% {
+          stroke-dashoffset: 0;
+        }
+      }
+      .error-svg {
+        stroke: #dc3545;
+        fill: #dc3545;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-100 flex items-center justify-center min-h-screen text-gray-800"
+  >
+    <div
+      class="bg-white p-6 md:p-8 rounded-xl shadow-md w-full max-w-md space-y-6"
+    >
+      <!-- Title -->
+      <div class="text-center space-y-1">
+        <h1 class="text-2xl font-bold text-blue-900">Login</h1>
+        <p class="text-sm text-gray-600">Access your university account</p>
+      </div>
+
+      <!-- Logo -->
+      <div class="flex justify-center">
+        <img
+          src="static/uploads/logo_new.jpg"
+          class="w-32 h-32 object-contain opacity-90"
+        />
+      </div>
+
+      <!-- Form -->
+      <form id="loginForm" class="space-y-4" action="/login" method="POST">
+        <div>
+          <label
+            for="username"
+            class="block text-sm font-medium mb-1 text-gray-700"
+            >Email</label
+          >
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="w-full px-3 py-2 rounded-md bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter Gmail address"
+            required
+            oninput="checkEmail()"
+          />
+          <div id="emailError" class="text-red-500 text-xs mt-1 hidden"></div>
+        </div>
+
+        <div>
+          <label
+            for="password"
+            class="block text-sm font-medium mb-1 text-gray-700"
+            >Password</label
+          >
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="w-full px-3 py-2 rounded-md bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your password"
+            required
+          />
+        </div>
+
+        <div class="text-right">
+          <a href="/check-email" class="text-blue-600 text-xs hover:underline"
+            >Forgot password?</a
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition shadow-sm"
+        >
+          Log In
+        </button>
+      </form>
+
+      <!-- Alerts -->
+      <div id="alertContainer"></div>
+
+      <p class="text-center text-xs text-gray-600">
+        Don’t have an account?
+        <a href="/signup" class="text-blue-600 hover:underline">Sign Up</a>
+      </p>
+    </div>
+
+    <script>
+      // Email Validation
+      function checkEmail() {
+        const email = document.getElementById("username").value;
+        const emailError = document.getElementById("emailError");
         const regex = /^[a-zA-Z0-9_.+-]+@gmail\.com$/;
         if (!regex.test(email) && email) {
-            emailError.textContent = 'Invalid email format. Must be a Gmail address.';
-            emailError.classList.remove('hidden');
-            return false;
+          emailError.textContent =
+            "Invalid email format. Must be a Gmail address.";
+          emailError.classList.remove("hidden");
+          return false;
         } else {
-            emailError.classList.add('hidden');
-            return true;
+          emailError.classList.add("hidden");
+          return true;
         }
-    }
+      }
 
-    // Function to Show Colorful Alert with Animated Icon
-    function showAlert(message, type = 'success') {
-        const alertContainer = document.getElementById('alertContainer');
-        const isSuccess = type === 'success';
+      // Function to Show Colorful Alert with Animated Icon
+      function showAlert(message, type = "success") {
+        const alertContainer = document.getElementById("alertContainer");
+        const isSuccess = type === "success";
 
         // Clear previous alerts
-        alertContainer.innerHTML = '';
+        alertContainer.innerHTML = "";
 
         // Create alert HTML with icon
         const icon = isSuccess
-            ? '<svg class="alert-icon success-icon checkmark-svg" viewBox="0 0 24 24"><path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"/></svg>'
-            : '<svg class="alert-icon error-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+          ? '<svg class="alert-icon success-icon checkmark-svg" viewBox="0 0 24 24"><path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"/></svg>'
+          : '<svg class="alert-icon error-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
 
         const alertHtml = `
-            <div class="alert ${isSuccess ? 'alert-success' : 'alert-error'} alert-slide-up flex">
+            <div class="alert ${
+              isSuccess ? "alert-success" : "alert-error"
+            } alert-slide-up flex">
                 ${icon}
                 <span>${message}</span>
             </div>
@@ -182,44 +262,46 @@
 
         // Auto-hide after 5 seconds
         setTimeout(() => {
-            const alert = alertContainer.querySelector('.alert');
-            if (alert) {
-                alert.style.animation = 'fadeOut 0.3s ease-out forwards';
-                setTimeout(() => alert.remove(), 300);
-            }
+          const alert = alertContainer.querySelector(".alert");
+          if (alert) {
+            alert.style.animation = "fadeOut 0.3s ease-out forwards";
+            setTimeout(() => alert.remove(), 300);
+          }
         }, 5000);
-    }
+      }
 
-    // Form Submission
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!checkEmail()) {
-            showAlert('Please enter a valid Gmail address.', 'error');
+      // Form Submission
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!checkEmail()) {
+            showAlert("Please enter a valid Gmail address.", "error");
             return;
-        }
-        const email = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+          }
+          const email = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
 
-        const response = await fetch('/login', {
-            method: 'POST',
+          const response = await fetch("/login", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-Requested-With": "XMLHttpRequest",
             },
-            body: new URLSearchParams({ username: email, password: password })
-        });
+            body: new URLSearchParams({ username: email, password: password }),
+          });
 
-        const result = await response.json();
-        if (response.ok && result.success) {
-            showAlert('Login successful! Redirecting...', 'success');
-            localStorage.setItem('user_id', result.email);
+          const result = await response.json();
+          if (response.ok && result.success) {
+            showAlert("Login successful! Redirecting...", "success");
+            localStorage.setItem("user_id", result.email);
             setTimeout(() => {
-                window.location.href = '/home';
+              window.location.href = "/home";
             }, 1500); // Brief delay for success message
-        } else {
-            showAlert(result.error || 'Login failed', 'error');
-        }
-    });
-</script>
-</body>
+          } else {
+            showAlert(result.error || "Login failed", "error");
+          }
+        });
+    </script>
+  </body>
 </html>

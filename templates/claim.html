@@ -1,423 +1,716 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Claim Achievements - TruPas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #fff; }
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background: #fff;
+      }
 
-        /* Your original beautiful gradients - FULLY RESTORED */
-        .color-blue   { border-left: 6px solid #3b82f6; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
-        .color-green  { border-left: 6px solid #10b981; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
-        .color-purple { border-left: 6px solid #8b5cf6; background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
-        .color-orange { border-left: 6px solid #f59e0b; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
-        .color-red    { border-left: 6px solid #ef4444; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+      /* Your original beautiful gradients - FULLY RESTORED */
+      .color-blue {
+        border-left: 6px solid #3b82f6;
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      }
+      .color-green {
+        border-left: 6px solid #10b981;
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      }
+      .color-purple {
+        border-left: 6px solid #8b5cf6;
+        background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+      }
+      .color-orange {
+        border-left: 6px solid #f59e0b;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      }
+      .color-red {
+        border-left: 6px solid #ef4444;
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      }
 
-        .upload-zone {
-            border: 3px dashed #CE1126;
-            border-radius: 16px;
-            padding: 3rem;
-            text-align: center;
-            transition: all 0.4s ease;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-        .upload-zone.active {
-            border-color: #FCD116;
-            background: rgba(252, 209, 22, 0.1);
-            cursor: pointer;
-            opacity: 1;
-        }
-        .preview-img {
-            max-width: 100%;
-            max-height: 360px;
-            border-radius: 12px;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.18);
-            margin: 0 auto;
-            display: block;
-        }
-        .badge-card {
-            transition: all 0.3s ease;
-            border-radius: 16px;
-            overflow: hidden;
-        }
-        .badge-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 24px 48px rgba(0,0,0,0.22);
-        }
-        .badge-glow { box-shadow: 0 0 35px rgba(252, 209, 22, 0.7); }
-        .status-badge {
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        .status-reviewing { background: #fff3cd; color: #856404; }
-        .status-verified  { background: #d4edda; color: #155724; }
+      .upload-zone {
+        border: 3px dashed #ce1126;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        transition: all 0.4s ease;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      .upload-zone.active {
+        border-color: #fcd116;
+        background: rgba(252, 209, 22, 0.1);
+        cursor: pointer;
+        opacity: 1;
+      }
+      .preview-img {
+        max-width: 100%;
+        max-height: 360px;
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+        margin: 0 auto;
+        display: block;
+      }
+      .badge-card {
+        transition: all 0.3s ease;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .badge-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+      }
+      .badge-glow {
+        box-shadow: 0 0 35px rgba(252, 209, 22, 0.7);
+      }
+      .status-badge {
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .status-reviewing {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status-verified {
+        background: #d4edda;
+        color: #155724;
+      }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: white; border-radius: 20px; width: 90%; max-width: 720px; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 90px rgba(0,0,0,0.35); animation: pop 0.4s ease; }
-        @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .close { position: absolute; right: 1.5rem; top: 1rem; font-size: 32px; cursor: pointer; color: white; font-weight: bold; }
-        .other-input { display: none; margin-top: 0.5rem; }
-        .other-input.show { display: block; }
-        .alert { padding: 1rem 1.5rem; border-radius: 12px; margin: 1.5rem 0; font-weight: 500; display: flex; align-items: center; gap: 0.75rem; animation: slideUp 0.4s ease; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-content {
+        background: white;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 720px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+        animation: pop 0.4s ease;
+      }
+      @keyframes pop {
+        from {
+          transform: scale(0.85);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .close {
+        position: absolute;
+        right: 1.5rem;
+        top: 1rem;
+        font-size: 32px;
+        cursor: pointer;
+        color: white;
+        font-weight: bold;
+      }
+      .other-input {
+        display: none;
+        margin-top: 0.5rem;
+      }
+      .other-input.show {
+        display: block;
+      }
+      .alert {
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1.5rem 0;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: slideUp 0.4s ease;
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
     </style>
-</head>
-<body class="min-h-screen">
-
-<!-- Sidebar -->
-<div class="fixed inset-y-0 left-0 w-64 bg-white shadow-2xl z-50">
-    <div class="p-8 text-center">
-        <img src="{{ url_for('static', filename='uploads/logo_new.jpg') }}" alt="Logo" class="w-44 mx-auto">
-        <nav class="mt-10 space-y-3">
-            <a href="/home" class="flex items-center p-4 rounded-xl hover:bg-yellow-50 text-gray-700"><i class="fas fa-home mr-4"></i> Dashboard</a>
-            <a href="/claim" class="flex items-center p-4 rounded-xl bg-yellow-100 text-yellow-800 font-bold"><i class="fas fa-medal mr-4"></i> Claim Achievements</a>
-            <a href="/profile" class="flex items-center p-4 rounded-xl hover:bg-yellow-50 text-gray-700"><i class="fas fa-user mr-4"></i> Profile</a>
-            <a href="/logout" class="flex items-center p-4 rounded-xl hover:bg-red-50 text-red-600"><i class="fas fa-sign-out-alt mr-4"></i> Logout</a>
-        </nav>
+  </head>
+  <body class="min-h-screen">
+    <!-- Sidebar -->
+   <div class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-white to-gray-50 shadow-xl flex flex-col justify-between">
+  <!-- Top Section: Logo and Navigation -->
+  <div class="p-6">
+    <!-- Logo -->
+    <div class="flex justify-center items-center mb-10">
+      <img
+        src="{{ url_for('static', filename='uploads/logo_new.jpg') }}"
+        alt="TruPas Logo"
+        class="w-36 h-auto "
+      />
     </div>
+
+    <!-- Navigation Links -->
+    <nav class="space-y-4">
+      <a href="/home" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300">
+        <i class="fas fa-home mr-3 text-red-600"></i> Dashboard
+      </a>
+      <a href="/claim" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300">
+        <i class="fas fa-medal mr-3 text-yellow-500"></i> Claim Badges
+      </a>
+      <a href="/dashboard" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300">
+        <i class="fas fa-chart-bar mr-3 text-yellow-500"></i> Analytics
+      </a>
+      <a href="/profile" class="flex items-center p-3 rounded-lg hover:bg-yellow-100 text-gray-800 hover:shadow-md transition-all duration-300">
+        <i class="fas fa-user mr-3 text-red-600"></i> Profile
+      </a>
+    </nav>
+  </div>
+
+  <!-- Bottom Section: Logout -->
+  <div class="p-6">
+    <a href="/logout" class="flex items-center p-3 rounded-lg hover:bg-red-100 text-red-600 hover:shadow-md transition-all duration-300">
+      <i class="fas fa-sign-out-alt mr-3"></i> Logout
+    </a>
+  </div>
 </div>
 
-<!-- Main Content -->
-<div class="ml-64 p-10">
 
-    <h1 class="text-4xl font-bold text-gray-800 mb-4">Claim Your Achievements</h1>
-    <p class="text-gray-600 mb-10">Upload certificates → get verified → showcase your success!</p>
+    <!-- Main Content -->
+    <div class="ml-64 p-10">
+      <h1 class="text-4xl font-bold text-gray-800 mb-4">
+        Claim Your Achievements
+      </h1>
+      <p class="text-gray-600 mb-10">
+        Upload certificates → get verified → showcase your success!
+      </p>
 
-    <!-- Upload Form -->
-    <div class="bg-white rounded-2xl shadow-xl p-10 mb-12">
+      <!-- Upload Form -->
+      <div class="bg-white rounded-2xl shadow-xl p-10 mb-12">
         <h2 class="text-2xl font-bold mb-8">Upload New Certificate</h2>
 
         <div id="uploadZone" class="upload-zone mb-10">
-            <i class="fas fa-cloud-upload-alt text-7xl text-gray-400 mb-6"></i>
-            <p class="text-xl text-gray-600 mb-6">Click below to fill certificate details first</p>
-            <input type="file" id="fileInput" accept="image/*,.pdf" class="hidden">
-            <button id="chooseFileBtn" class="bg-gray-400 text-white px-10 py-4 rounded-xl text-lg cursor-not-allowed" disabled>
-                Choose File (locked)
-            </button>
+          <i class="fas fa-cloud-upload-alt text-7xl text-gray-400 mb-6"></i>
+          <p class="text-xl text-gray-600 mb-6">
+            Click below to fill certificate details first
+          </p>
+          <input
+            type="file"
+            id="fileInput"
+            accept="image/*,.pdf"
+            class="hidden"
+          />
+          <button
+            id="chooseFileBtn"
+            class="bg-gray-400 text-white px-10 py-4 rounded-xl text-lg cursor-not-allowed"
+            disabled
+          >
+            Choose File (locked)
+          </button>
         </div>
 
         <!-- Preview Section -->
-        <div id="previewContainer" class="hidden bg-gray-50 rounded-2xl p-8 mb-8 border-2 border-dashed border-gray-300">
-            <h3 class="text-xl font-semibold text-center mb-6 text-gray-700">Certificate Preview</h3>
-            <div id="previewContent" class="mb-8 flex justify-center"></div>
+        <div
+          id="previewContainer"
+          class="hidden bg-gray-50 rounded-2xl p-8 mb-8 border-2 border-dashed border-gray-300"
+        >
+          <h3 class="text-xl font-semibold text-center mb-6 text-gray-700">
+            Certificate Preview
+          </h3>
+          <div id="previewContent" class="mb-8 flex justify-center"></div>
 
-            <div class="max-w-2xl mx-auto space-y-6">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Document Name (max 20 chars)</label>
-                    <input type="text" id="docName" placeholder="e.g. Bachelor of Science" maxlength="20"
-                           class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 transition">
-                </div>
-                <div class="text-center">
-                    <button id="removeBtn" class="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg transition hidden">
-                        Remove File
-                    </button>
-                </div>
+          <div class="max-w-2xl mx-auto space-y-6">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2"
+                >Document Name (max 20 chars)</label
+              >
+              <input
+                type="text"
+                id="docName"
+                placeholder="e.g. Bachelor of Science"
+                maxlength="20"
+                class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 transition"
+              />
             </div>
+            <div class="text-center">
+              <button
+                id="removeBtn"
+                class="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg transition hidden"
+              >
+                Remove File
+              </button>
+            </div>
+          </div>
         </div>
 
-        <button id="mainSubmitBtn" class="w-full bg-gradient-to-r from-red-600 to-yellow-500 text-white font-bold text-xl py-6 rounded-xl hover:from-red-700 hover:to-yellow-600 transition shadow-xl">
-            Fill Details First
+        <button
+          id="mainSubmitBtn"
+          class="w-full bg-gradient-to-r from-red-600 to-yellow-500 text-white font-bold text-xl py-6 rounded-xl hover:from-red-700 hover:to-yellow-600 transition shadow-xl"
+        >
+          Fill Details First
         </button>
-    </div>
+      </div>
 
-    <div id="alertContainer"></div>
+      <div id="alertContainer"></div>
 
-    <!-- Updated Details Modal with Province, University, Gender, Course Dropdown -->
-    <div id="detailsModal" class="modal">
+      <!-- Updated Details Modal with Province, University, Gender, Course Dropdown -->
+      <div id="detailsModal" class="modal">
         <div class="modal-content">
-            <div class="bg-gradient-to-r from-red-600 to-yellow-500 text-white p-8 text-center relative">
-                <span class="close" onclick="closeModal()">×</span>
-                <h2 class="text-3xl font-bold">Certificate Details</h2>
-                <p class="mt-3 text-lg opacity-90">Please fill all fields accurately</p>
+          <div
+            class="bg-gradient-to-r from-red-600 to-yellow-500 text-white p-8 text-center relative"
+          >
+            <span class="close" onclick="closeModal()">×</span>
+            <h2 class="text-3xl font-bold">Certificate Details</h2>
+            <p class="mt-3 text-lg opacity-90">
+              Please fill all fields accurately
+            </p>
+          </div>
+          <form id="detailsForm" class="p-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block font-bold mb-2">Applicant Name *</label>
+                <input
+                  type="text"
+                  id="applicantName"
+                  required
+                  class="w-full px-5 py-4 border-2 rounded-xl"
+                />
+              </div>
+              <div>
+                <label class="block font-bold mb-2">Gender *</label>
+                <select
+                  id="gender"
+                  required
+                  class="w-full px-5 py-4 border-2 rounded-xl"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold mb-2">Province *</label>
+                <select
+                  id="province"
+                  required
+                  class="w-full px-5 py-4 border-2 rounded-xl"
+                >
+                  <option value="">Select Province</option>
+                  <option>National Capital District</option>
+                  <option>Central</option>
+                  <option>Milne Bay</option>
+                  <option>Oro</option>
+                  <option>Morobe</option>
+                  <option>Madang</option>
+                  <option>East Sepik</option>
+                  <option>West Sepik</option>
+                  <option>Manus</option>
+                  <option>New Ireland</option>
+                  <option>East New Britain</option>
+                  <option>West New Britain</option>
+                  <option>Bougainville</option>
+                  <option>Western</option>
+                  <option>Gulf</option>
+                  <option>Southern Highlands</option>
+                  <option>Hela</option>
+                  <option>Western Highlands</option>
+                  <option>Jiwaka</option>
+                  <option>Chimbu</option>
+                  <option>Eastern Highlands</option>
+                  <option>Enga</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold mb-2"
+                  >University / Institution *</label
+                >
+                <select
+                  id="university"
+                  required
+                  class="w-full px-5 py-4 border-2 rounded-xl"
+                  disabled
+                >
+                  <option value="">First select province</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold mb-2">Course / Program *</label>
+                <select
+                  id="courseName"
+                  required
+                  class="w-full px-5 py-4 border-2 rounded-xl"
+                >
+                  <option value="">Select Course</option>
+                  <option>Bachelor of Science in Computer Engineering</option>
+                  <option>Bachelor of Information Technology</option>
+                  <option>Bachelor of Civil Engineering</option>
+                  <option>Bachelor of Electrical Engineering</option>
+                  <option>Bachelor of Mechanical Engineering</option>
+                  <option>Bachelor of Nursing</option>
+                  <option>Bachelor of Medicine & Surgery (MBBS)</option>
+                  <option>Bachelor of Education (Primary)</option>
+                  <option>Bachelor of Business Administration</option>
+                  <option>Bachelor of Accounting</option>
+                  <option>Bachelor of Agriculture</option>
+                  <option>Diploma in Nursing</option>
+                  <option>Diploma in Teaching (Primary)</option>
+                  <option>Certificate in Automotive Mechanics</option>
+                  <option>Certificate in Carpentry & Joinery</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold mb-2">Index / Student ID *</label>
+                <input
+                  type="text"
+                  id="indexNumber"
+                  required
+                  class="w-full px-5 py-4 border-2 rounded-xl"
+                />
+              </div>
             </div>
-            <form id="detailsForm" class="p-10">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block font-bold mb-2">Applicant Name *</label>
-                        <input type="text" id="applicantName" required class="w-full px-5 py-4 border-2 rounded-xl">
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-2">Gender *</label>
-                        <select id="gender" required class="w-full px-5 py-4 border-2 rounded-xl">
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-2">Province *</label>
-                        <select id="province" required class="w-full px-5 py-4 border-2 rounded-xl">
-                            <option value="">Select Province</option>
-                            <option>National Capital District</option>
-                            <option>Central</option>
-                            <option>Milne Bay</option>
-                            <option>Oro</option>
-                            <option>Morobe</option>
-                            <option>Madang</option>
-                            <option>East Sepik</option>
-                            <option>West Sepik</option>
-                            <option>Manus</option>
-                            <option>New Ireland</option>
-                            <option>East New Britain</option>
-                            <option>West New Britain</option>
-                            <option>Bougainville</option>
-                            <option>Western</option>
-                            <option>Gulf</option>
-                            <option>Southern Highlands</option>
-                            <option>Hela</option>
-                            <option>Western Highlands</option>
-                            <option>Jiwaka</option>
-                            <option>Chimbu</option>
-                            <option>Eastern Highlands</option>
-                            <option>Enga</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-2">University / Institution *</label>
-                        <select id="university" required class="w-full px-5 py-4 border-2 rounded-xl" disabled>
-                            <option value="">First select province</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-2">Course / Program *</label>
-                        <select id="courseName" required class="w-full px-5 py-4 border-2 rounded-xl">
-                            <option value="">Select Course</option>
-                            <option>Bachelor of Science in Computer Engineering</option>
-                            <option>Bachelor of Information Technology</option>
-                            <option>Bachelor of Civil Engineering</option>
-                            <option>Bachelor of Electrical Engineering</option>
-                            <option>Bachelor of Mechanical Engineering</option>
-                            <option>Bachelor of Nursing</option>
-                            <option>Bachelor of Medicine & Surgery (MBBS)</option>
-                            <option>Bachelor of Education (Primary)</option>
-                            <option>Bachelor of Business Administration</option>
-                            <option>Bachelor of Accounting</option>
-                            <option>Bachelor of Agriculture</option>
-                            <option>Diploma in Nursing</option>
-                            <option>Diploma in Teaching (Primary)</option>
-                            <option>Certificate in Automotive Mechanics</option>
-                            <option>Certificate in Carpentry & Joinery</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-2">Index / Student ID *</label>
-                        <input type="text" id="indexNumber" required class="w-full px-5 py-4 border-2 rounded-xl">
-                    </div>
-                </div>
-                <div class="flex justify-end gap-4 mt-10">
-                    <button type="button" onclick="closeModal()" class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="px-10 py-4 bg-gradient-to-r from-red-600 to-yellow-500 hover:from-red-700 hover:to-yellow-600 text-white font-bold rounded-xl">Continue Upload File</button>
-                </div>
-            </form>
+            <div class="flex justify-end gap-4 mt-10">
+              <button
+                type="button"
+                onclick="closeModal()"
+                class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-10 py-4 bg-gradient-to-r from-red-600 to-yellow-500 hover:from-red-700 hover:to-yellow-600 text-white font-bold rounded-xl"
+              >
+                Continue Upload File
+              </button>
+            </div>
+          </form>
         </div>
-    </div>
+      </div>
 
-    <!-- Under Review & Verified Sections (unchanged) -->
-    <section class="mb-12">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Your Uploads (Under Review)</h2>
+      <!-- Under Review & Verified Sections (unchanged) -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+          Your Uploads (Under Review)
+        </h2>
         {% if uploads %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {% for upload in uploads %}
-            <div class="badge-card bg-white rounded-xl p-6 shadow-lg {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }}">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 class="text-xl font-semibold text-gray-800">{{ upload.title }}</h3>
-                    <span class="status-badge status-reviewing">Reviewing</span>
-                </div>
-                <p class="text-sm text-gray-600 mb-2">ID: <strong>{{ upload.unique_id[:8] }}...</strong></p>
-                {% if upload.course_name %}<p class="text-sm text-gray-600 mb-1">Course: {{ upload.course_name }}</p>{% endif %}
-                {% if upload.university %}<p class="text-sm text-gray-600 mb-4">University: {{ upload.university }}</p>{% endif %}
-
-                <iframe src="{{ upload.file_url }}" class="w-full h-44 rounded-lg border mb-4" frameborder="0"></iframe>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <a href="{{ upload.file_url }}" target="_blank" class="bg-gray-700 hover:bg-gray-800 text-white text-center py-3 rounded-lg font-semibold">View</a>
-                    <button class="bg-yellow-500 hover:bg-yellow-600 text-black py-3 rounded-lg font-semibold update-btn"
-                            data-id="{{ upload.id }}"
-                            data-title="{{ upload.title|e }}"
-                            data-applicant="{{ upload.applicant_name|default('')|e }}"
-                            data-course="{{ upload.course_name|default('')|e }}"
-                            data-university="{{ upload.university|default('')|e }}"
-                            data-index="{{ upload.index_number|default('')|e }}">Update</button>
-                </div>
+          {% for upload in uploads %}
+          <div
+            class="badge-card bg-white rounded-xl p-6 shadow-lg {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }}"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-xl font-semibold text-gray-800">
+                {{ upload.title }}
+              </h3>
+              <span class="status-badge status-reviewing">Reviewing</span>
             </div>
-            {% endfor %}
+            <p class="text-sm text-gray-600 mb-2">
+              ID: <strong>{{ upload.unique_id[:8] }}...</strong>
+            </p>
+            {% if upload.course_name %}
+            <p class="text-sm text-gray-600 mb-1">
+              Course: {{ upload.course_name }}
+            </p>
+            {% endif %} {% if upload.university %}
+            <p class="text-sm text-gray-600 mb-4">
+              University: {{ upload.university }}
+            </p>
+            {% endif %}
+
+            <iframe
+              src="{{ upload.file_url }}"
+              class="w-full h-44 rounded-lg border mb-4"
+              frameborder="0"
+            ></iframe>
+
+            <div class="grid grid-cols-2 gap-3">
+              <a
+                href="{{ upload.file_url }}"
+                target="_blank"
+                class="bg-gray-700 hover:bg-gray-800 text-white text-center py-3 rounded-lg font-semibold"
+                >View</a
+              >
+              <button
+                class="bg-yellow-500 hover:bg-yellow-600 text-black py-3 rounded-lg font-semibold update-btn"
+                data-id="{{ upload.id }}"
+                data-title="{{ upload.title|e }}"
+                data-applicant="{{ upload.applicant_name|default('')|e }}"
+                data-course="{{ upload.course_name|default('')|e }}"
+                data-university="{{ upload.university|default('')|e }}"
+                data-index="{{ upload.index_number|default('')|e }}"
+              >
+                Update
+              </button>
+            </div>
+          </div>
+          {% endfor %}
         </div>
         {% else %}
         <div class="text-center py-16 bg-gray-50 rounded-2xl">
-            <p class="text-xl text-gray-600">No pending uploads yet.</p>
+          <p class="text-xl text-gray-600">No pending uploads yet.</p>
         </div>
         {% endif %}
-    </section>
+      </section>
 
-    <section id="verifiedSection">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Verified Achievements</h2>
+      <section id="verifiedSection">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+          Verified Achievements
+        </h2>
         {% if verified_badges %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {% for badge in verified_badges %}
-            <div class="badge-card bg-white rounded-xl p-6 shadow-xl {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }} badge-glow">
-                <div class="relative mb-4">
-                    <img src="{{ badge.badge_url }}" alt="{{ badge.title }}" class="w-full h-52 object-cover rounded-lg">
-                    <div class="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">Verified</div>
-                </div>
-                <h3 class="text-xl font-bold text-gray-800 mb-2">{{ badge.title }}</h3>
-                <p class="text-sm text-gray-600 mb-1">Issuer: {{ badge.issuer }}</p>
-                <p class="text-sm text-gray-600 mb-4">ID: <strong>{{ badge.id[:8] }}...</strong></p>
-                <a href="/download/{{ badge.id }}" class="block text-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg">
-                    Download Achievement
-                </a>
+          {% for badge in verified_badges %}
+          <div
+            class="badge-card bg-white rounded-xl p-6 shadow-xl {{ ['color-blue', 'color-green', 'color-purple', 'color-orange', 'color-red'][loop.index0 % 5] }} badge-glow"
+          >
+            <div class="relative mb-4">
+              <img
+                src="{{ badge.badge_url }}"
+                alt="{{ badge.title }}"
+                class="w-full h-52 object-cover rounded-lg"
+              />
+              <div
+                class="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg"
+              >
+                Verified
+              </div>
             </div>
-            {% endfor %}
+            <h3 class="text-xl font-bold text-gray-800 mb-2">
+              {{ badge.title }}
+            </h3>
+            <p class="text-sm text-gray-600 mb-1">Issuer: {{ badge.issuer }}</p>
+            <p class="text-sm text-gray-600 mb-4">
+              ID: <strong>{{ badge.id[:8] }}...</strong>
+            </p>
+            <a
+              href="/download/{{ badge.id }}"
+              class="block text-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg"
+            >
+              Download Achievement
+            </a>
+          </div>
+          {% endfor %}
         </div>
         {% else %}
-        <div class="text-center py-20 bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl">
-            <i class="fas fa-award text-9xl text-yellow-500 mb-6"></i>
-            <h3 class="text-3xl font-bold mb-4">No Verified Achievements Yet!</h3>
-            <p class="text-gray-600 text-lg">Your journey starts here!</p>
+        <div
+          class="text-center py-20 bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl"
+        >
+          <i class="fas fa-award text-9xl text-yellow-500 mb-6"></i>
+          <h3 class="text-3xl font-bold mb-4">No Verified Achievements Yet!</h3>
+          <p class="text-gray-600 text-lg">Your journey starts here!</p>
         </div>
         {% endif %}
-    </section>
+      </section>
+    </div>
 
-</div>
+    <script>
+      const uploadZone = document.getElementById("uploadZone");
+      const fileInput = document.getElementById("fileInput");
+      const chooseFileBtn = document.getElementById("chooseFileBtn");
+      const previewContainer = document.getElementById("previewContainer");
+      const previewContent = document.getElementById("previewContent");
+      const docName = document.getElementById("docName");
+      const removeBtn = document.getElementById("removeBtn");
+      const mainSubmitBtn = document.getElementById("mainSubmitBtn");
+      let certificateDetails = null;
 
-<script>
-    const uploadZone = document.getElementById('uploadZone');
-    const fileInput = document.getElementById('fileInput');
-    const chooseFileBtn = document.getElementById('chooseFileBtn');
-    const previewContainer = document.getElementById('previewContainer');
-    const previewContent = document.getElementById('previewContent');
-    const docName = document.getElementById('docName');
-    const removeBtn = document.getElementById('removeBtn');
-    const mainSubmitBtn = document.getElementById('mainSubmitBtn');
-    let certificateDetails = null;
-
-    // PNG Universities by Province
-    const universitiesByProvince = {
-        "National Capital District": ["University of Papua New Guinea (UPNG)", "Pacific Adventist University", "Institute of Business Studies", "Don Bosco Technological Institute"],
-        "Morobe": ["Papua New Guinea University of Technology (Unitech)"],
-        "Madang": ["Divine Word University (DWU)"],
+      // PNG Universities by Province
+      const universitiesByProvince = {
+        "National Capital District": [
+          "University of Papua New Guinea (UPNG)",
+          "Pacific Adventist University",
+          "Institute of Business Studies",
+          "Don Bosco Technological Institute",
+        ],
+        Morobe: ["Papua New Guinea University of Technology (Unitech)"],
+        Madang: ["Divine Word University (DWU)"],
         "Eastern Highlands": ["University of Goroka (UOG)"],
         "Western Highlands": ["Western Pacific University"],
-        "Hela": ["Hela Provincial College"],
-        "Enga": ["Enga Teachers College"],
+        Hela: ["Hela Provincial College"],
+        Enga: ["Enga Teachers College"],
         "East Sepik": ["University of Natural Resources & Environment (UNRE)"],
         "East New Britain": ["Pacific Adventist University (Raluana)"],
-        "Bougainville": ["Bougainville Technical College"]
-    };
+        Bougainville: ["Bougainville Technical College"],
+      };
 
-    // Dynamic University Population
-    document.getElementById('province').addEventListener('change', function() {
-        const province = this.value;
-        const uniSelect = document.getElementById('university');
-        uniSelect.innerHTML = '<option value="">Select University</option>';
-        uniSelect.disabled = false;
+      // Dynamic University Population
+      document
+        .getElementById("province")
+        .addEventListener("change", function () {
+          const province = this.value;
+          const uniSelect = document.getElementById("university");
+          uniSelect.innerHTML = '<option value="">Select University</option>';
+          uniSelect.disabled = false;
 
-        if (province && universitiesByProvince[province]) {
-            universitiesByProvince[province].forEach(uni => {
-                uniSelect.innerHTML += `<option value="${uni}">${uni}</option>`;
+          if (province && universitiesByProvince[province]) {
+            universitiesByProvince[province].forEach((uni) => {
+              uniSelect.innerHTML += `<option value="${uni}">${uni}</option>`;
             });
-        } else {
-            uniSelect.innerHTML = '<option value="">No universities listed</option>';
+          } else {
+            uniSelect.innerHTML =
+              '<option value="">No universities listed</option>';
             uniSelect.disabled = true;
-        }
-    });
+          }
+        });
 
-    function showAlert(msg, type = 'success') {
-        document.getElementById('alertContainer').innerHTML = `<div class="alert alert-${type}"><i class="fas fa-${type==='success'?'check-circle':'exclamation-triangle'}"></i> ${msg}</div>`;
-        setTimeout(() => document.getElementById('alertContainer').innerHTML = '', 5000);
-    }
+      function showAlert(msg, type = "success") {
+        document.getElementById(
+          "alertContainer"
+        ).innerHTML = `<div class="alert alert-${type}"><i class="fas fa-${
+          type === "success" ? "check-circle" : "exclamation-triangle"
+        }"></i> ${msg}</div>`;
+        setTimeout(
+          () => (document.getElementById("alertContainer").innerHTML = ""),
+          5000
+        );
+      }
 
-    function openModal() { document.getElementById('detailsModal').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
-    function closeModal() { document.getElementById('detailsModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
+      function openModal() {
+        document.getElementById("detailsModal").style.display = "flex";
+        document.body.style.overflow = "hidden";
+      }
+      function closeModal() {
+        document.getElementById("detailsModal").style.display = "none";
+        document.body.style.overflow = "auto";
+      }
 
-    mainSubmitBtn.addEventListener('click', e => { e.preventDefault(); openModal(); });
-
-    document.getElementById('detailsForm').addEventListener('submit', e => {
+      mainSubmitBtn.addEventListener("click", (e) => {
         e.preventDefault();
-        const required = ['applicantName', 'gender', 'province', 'university', 'courseName', 'indexNumber'];
-        if (!required.every(id => document.getElementById(id).value.trim())) {
-            return showAlert('Please fill all required fields', 'error');
+        openModal();
+      });
+
+      document.getElementById("detailsForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const required = [
+          "applicantName",
+          "gender",
+          "province",
+          "university",
+          "courseName",
+          "indexNumber",
+        ];
+        if (!required.every((id) => document.getElementById(id).value.trim())) {
+          return showAlert("Please fill all required fields", "error");
         }
 
         certificateDetails = {
-            applicant_name: document.getElementById('applicantName').value.trim(),
-            gender: document.getElementById('gender').value,
-            province: document.getElementById('province').value,
-            university: document.getElementById('university').value,
-            course_name: document.getElementById('courseName').value,
-            index_number: document.getElementById('indexNumber').value.trim()
+          applicant_name: document.getElementById("applicantName").value.trim(),
+          gender: document.getElementById("gender").value,
+          province: document.getElementById("province").value,
+          university: document.getElementById("university").value,
+          course_name: document.getElementById("courseName").value,
+          index_number: document.getElementById("indexNumber").value.trim(),
         };
 
         closeModal();
-        uploadZone.classList.add('active');
+        uploadZone.classList.add("active");
         chooseFileBtn.disabled = false;
-        chooseFileBtn.textContent = 'Choose File';
-        chooseFileBtn.classList.replace('bg-gray-400', 'bg-red-600');
-        mainSubmitBtn.textContent = 'Submit for Review';
-        showAlert('Details saved! Now upload your certificate', 'success');
-    });
+        chooseFileBtn.textContent = "Choose File";
+        chooseFileBtn.classList.replace("bg-gray-400", "bg-red-600");
+        mainSubmitBtn.textContent = "Submit for Review";
+        showAlert("Details saved! Now upload your certificate", "success");
+      });
 
-    chooseFileBtn.onclick = () => fileInput.click();
-    fileInput.onchange = () => {
+      chooseFileBtn.onclick = () => fileInput.click();
+      fileInput.onchange = () => {
         const file = fileInput.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => {
-            previewContent.innerHTML = file.type.startsWith('image/')
-                ? `<img src="${e.target.result}" class="preview-img">`
-                : `<iframe src="${e.target.result}" class="w-full h-96 border-2 rounded-xl"></iframe>`;
-            previewContainer.classList.remove('hidden');
-            removeBtn.classList.remove('hidden');
-            docName.value = file.name.replace(/\.[^/.]+$/, "").substring(0,20);
+        reader.onload = (e) => {
+          previewContent.innerHTML = file.type.startsWith("image/")
+            ? `<img src="${e.target.result}" class="preview-img">`
+            : `<iframe src="${e.target.result}" class="w-full h-96 border-2 rounded-xl"></iframe>`;
+          previewContainer.classList.remove("hidden");
+          removeBtn.classList.remove("hidden");
+          docName.value = file.name.replace(/\.[^/.]+$/, "").substring(0, 20);
         };
         reader.readAsDataURL(file);
-    };
+      };
 
-    removeBtn.onclick = () => {
-        fileInput.value = ''; previewContent.innerHTML = ''; previewContainer.classList.add('hidden'); removeBtn.classList.add('hidden');
-    };
+      removeBtn.onclick = () => {
+        fileInput.value = "";
+        previewContent.innerHTML = "";
+        previewContainer.classList.add("hidden");
+        removeBtn.classList.add("hidden");
+      };
 
-    mainSubmitBtn.onclick = async e => {
+      mainSubmitBtn.onclick = async (e) => {
         e.preventDefault();
-        if (!certificateDetails) return showAlert('Fill details first', 'error');
-        if (!fileInput.files[0]) return showAlert('Choose a file', 'error');
-        if (!docName.value.trim() || docName.value.length > 20) return showAlert('Enter valid document name (max 20)', 'error');
+        if (!certificateDetails)
+          return showAlert("Fill details first", "error");
+        if (!fileInput.files[0]) return showAlert("Choose a file", "error");
+        if (!docName.value.trim() || docName.value.length > 20)
+          return showAlert("Enter valid document name (max 20)", "error");
 
         const fd = new FormData();
-        fd.append('file', fileInput.files[0]);
-        fd.append('doc_name', docName.value.trim());
-        Object.entries(certificateDetails).forEach(([k,v]) => fd.append(k, v));
+        fd.append("file", fileInput.files[0]);
+        fd.append("doc_name", docName.value.trim());
+        Object.entries(certificateDetails).forEach(([k, v]) => fd.append(k, v));
 
         mainSubmitBtn.disabled = true;
-        mainSubmitBtn.textContent = 'Submitting...';
+        mainSubmitBtn.textContent = "Submitting...";
 
         try {
-            const res = await fetch('/claim', {method: 'POST', body: fd});
-            const data = await res.json();
-            showAlert(data.message || 'Submitted successfully!', 'success');
-            confetti({particleCount: 220, spread: 80, origin: {y: 0.6}});
-            setTimeout(() => location.reload(), 2800);
-        } catch { showAlert('Upload failed', 'error'); }
-        finally { mainSubmitBtn.disabled = false; mainSubmitBtn.textContent = 'Submit for Review'; }
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const sec = document.getElementById('verifiedSection');
-        if (sec && '{{ verified_badges|length }}' > 0) {
-            new IntersectionObserver(e => {
-                if (e[0].isIntersecting) confetti({particleCount: 180, spread: 70, origin: {y: 0.6}, colors: ['#CE1126','#FCD116']});
-            }, {threshold: 0.3}).observe(sec);
+          const res = await fetch("/claim", { method: "POST", body: fd });
+          const data = await res.json();
+          showAlert(data.message || "Submitted successfully!", "success");
+          confetti({ particleCount: 220, spread: 80, origin: { y: 0.6 } });
+          setTimeout(() => location.reload(), 2800);
+        } catch {
+          showAlert("Upload failed", "error");
+        } finally {
+          mainSubmitBtn.disabled = false;
+          mainSubmitBtn.textContent = "Submit for Review";
         }
-    });
-</script>
-</body>
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const sec = document.getElementById("verifiedSection");
+        if (sec && "{{ verified_badges|length }}" > 0) {
+          new IntersectionObserver(
+            (e) => {
+              if (e[0].isIntersecting)
+                confetti({
+                  particleCount: 180,
+                  spread: 70,
+                  origin: { y: 0.6 },
+                  colors: ["#CE1126", "#FCD116"],
+                });
+            },
+            { threshold: 0.3 }
+          ).observe(sec);
+        }
+      });
+    </script>
+  </body>
 </html>
