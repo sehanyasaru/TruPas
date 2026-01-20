@@ -561,16 +561,6 @@
 
 
         function copyLink() {
-            navigator.clipboard.writeText(currentMessage).then(() => {
-                alert('Link and message copied to clipboard!');
-            }).catch(() => {
-                alert('Failed to copy. Please copy manually: ' + currentMessage);
-            });
-            confettiBurst();
-            closeShareModal();
-        }
-
-        function copyLink() {
             if (!currentMessage) {
                 alert('No message to copy!');
                 return;
