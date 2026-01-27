@@ -271,6 +271,15 @@ def send_verification_email(to_email, link, firstname):
         logger.error(f"Failed to send email: {e}")
 
 
+def admin_required(f):
+    """Decorator to check if admin is logged in"""
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def index():
     return render_template('TruPass_splashscreen.html')
@@ -866,6 +875,8 @@ def DHERST_login():
             return jsonify({"error": "Email and password are required"}), 400
 
         url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+        
+
         payload = {
             "email": email,
             "password": password,
@@ -906,6 +917,211 @@ def DHERST_login():
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
         return jsonify({"error": f"Failed to log in: {str(e)}"}), 500
+
+@app.route('/admin/register', methods=['GET', 'POST'])
+def admin_register():
+    if request.method == 'GET':
+        return render_template('admin_register.html')
+
+    try:
+        data = request.form
+        university_id = data.get('university_id')
+        university_name = data.get('university_name')
+        email = data.get('email')
+        password = data.get('password')
+
+        if not all([university_id, university_name, email, password]):
+            return jsonify({"error": "All fields are required"}), 400
+
+        # Check if university_id already exists in admins collection
+        admin_ref = db.collection('admins').document(university_id)
+        if admin_ref.get().exists:
+            return jsonify({"error": "Admin with this University ID already exists"}), 409
+
+        # Create user in Firebase Auth
+        try:
+            user = auth.create_user(email=email, password=password)
+            uid = user.uid
+        except auth.EmailAlreadyExistsError:
+            return jsonify({"error": "Email already registered"}), 409
+        except Exception as e:
+             return jsonify({"error": f"Auth Error: {str(e)}"}), 500
+
+        # Store admin details in Firestore
+        admin_ref.set({
+            'university_name': university_name,
+            'email': email,
+            'uid': uid,
+            'created_at': firestore.SERVER_TIMESTAMP
+        })
+
+        return jsonify({"message": "Admin registered successfully!"})
+
+    except Exception as e:
+        logger.error(f"Admin Registration Error: {str(e)}")
+        return jsonify({"error": "Registration failed"}), 500
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'GET':
+        return render_template('admin_login.html')
+
+    try:
+        data = request.form
+        university_id = data.get('university_id')
+        password = data.get('password')
+
+        if not university_id or not password:
+            return jsonify({"error": "University ID and Password required"}), 400
+
+        # Lookup admin email
+        admin_doc = db.collection('admins').document(university_id).get()
+        if not admin_doc.exists:
+            return jsonify({"error": "Invalid University ID"}), 401
+        
+        admin_data = admin_doc.to_dict()
+        email = admin_data.get('email')
+
+        # Auth with Firebase REST API
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+        payload = {
+            "email": email,
+            "password": password,
+            "returnSecureToken": True
+        }
+        response = requests.post(url, json=payload)
+        response_data = response.json()
+
+        if 'error' in response_data:
+            return jsonify({"error": "Invalid Password"}), 401
+
+        # Set Session
+        session['admin_id'] = university_id
+        session['university_name'] = admin_data.get('university_name')
+
+        return jsonify({"success": True, "message": "Login Successful"})
+
+    except Exception as e:
+        logger.error(f"Admin Login Error: {str(e)}")
+        return jsonify({"error": "Login failed"}), 500
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    university_name = session.get('university_name')
+    try:
+        students = []
+        
+        # 1. Get Pending Uploads for this University
+        # Note: 'university' field in upload must match 'university_name' exactly
+        uploads = db.collection_group('uploads').where('university', '==', university_name).stream()
+        
+        for doc in uploads:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            data['doc_type'] = 'upload' # Helper to know where it came from
+            # Need user_id to approve? The doc.reference.parent.parent.id gives user_id
+            data['user_id'] = doc.reference.parent.parent.id 
+            students.append(data)
+
+        # 2. Get Verified Credentials (Optional, if we want to show history)
+        # The requirement says "display students... allow approval... if approved update... otherwise keep pending"
+        # It also says "Allow admins to download each student's certificates"
+        # We can list verified ones too for download purposes.
+        credentials = db.collection_group('credentials').where('issuer', '==', university_name).stream()
+        for doc in credentials:
+             data = doc.to_dict()
+             data['id'] = doc.id
+             data['doc_type'] = 'credential'
+             students.append(data)
+
+        return render_template('admin_dashboard.html', 
+                               university_name=university_name, 
+                               students=students)
+                               
+    except Exception as e:
+        logger.error(f"Dashboard Error: {str(e)}")
+        return f"Error loading dashboard: {str(e)}", 500
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_id', None)
+    session.pop('university_name', None)
+    return redirect(url_for('admin_login'))
+
+@app.route('/admin/approve_credential/<doc_id>', methods=['POST'])
+@admin_required
+def approve_credential(doc_id):
+    try:
+        # We need to find the document. It could be in any user's subcollection.
+        # Efficient way: Query collection group by ID (assuming Firestore IDs are unique enough or we use unique_id)
+        # Firestore IDs are auto-generated and unique.
+        
+        # Try finding in uploads first (pending)
+        # Problem: 'collection_group' doesn't support 'get()' for a single ID directly without a where clause if we don't know the path.
+        # But we can query:
+        
+        # Strategy: Search in uploads first.
+        results = db.collection_group('uploads').stream() # INEFFICIENT in production!
+        # BETTER: Query by unique field if we have one. We have 'unique_id' in uploads? Yes.
+        # modifying creating to use unique_id as well?
+        
+        # Let's use the property that we loaded the list with user_id in dashboard, 
+        # BUT the route only takes doc_id. 
+        # I should have passed user_id in the route. 
+        # But for now, I will search using the doc_id, assuming I can find it.
+        # Actually, simpler: The dashboard knows the user_id. 
+        # I'll update the logic to accept optional user_id query param or just find it.
+        
+        # To make it robust without changing route signature too much (or if I can't change template easily now):
+        # I'll use a collection group query on FieldPath.documentId()
+        
+        # searches = db.collection_group('uploads').where(firestore.FieldPath.document_id(), '==', doc_id).stream()
+        # This works!
+        
+        target_doc = None
+        for doc in db.collection_group('uploads').where(firestore.FieldPath.document_id(), '==', doc_id).stream():
+            target_doc = doc
+            break
+            
+        if not target_doc:
+             return jsonify({"error": "Document not found"}), 404
+             
+        # Now verify/move it
+        data = target_doc.to_dict()
+        user_id = target_doc.reference.parent.parent.id
+        
+        # Credentials Ref
+        cred_ref = db.collection('users').document(user_id).collection('credentials').document(doc_id)
+        
+        credential_data = {
+            'title': data.get('title', 'Certificate'),
+            'issuer': session.get('university_name', 'TruPas'), # The admin is the issuer
+            'badge_url': data.get('file_url'),
+            'file_url': data.get('file_url'),
+            'status': 'verified',
+            'created_at': data.get('created_at', firestore.SERVER_TIMESTAMP),
+            'verified_at': firestore.SERVER_TIMESTAMP,
+            'applicant_name': data.get('applicant_name'),
+            'course_name': data.get('course_name'),
+            'course_type': data.get('course_type', 'Not specified'),
+            'province': data.get('province'),
+            'university': data.get('university'),
+            'index_number': data.get('index_number'),
+            'unique_id': data.get('unique_id', str(uuid.uuid4())),
+            'approved_by': session['admin_id']
+        }
+
+        batch = db.batch()
+        batch.set(cred_ref, credential_data)
+        batch.delete(target_doc.reference)
+        batch.commit()
+        
+        return jsonify({"success": True})
+
+    except Exception as e:
+        logger.error(f"Approval Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)

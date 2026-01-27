@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Registration - TruPas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full fade-in">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-900">Admin Registration</h1>
+
+        <form id="adminRegisterForm" class="space-y-4">
+            <div>
+                <label for="university_id" class="block text-sm font-medium text-gray-700">University ID</label>
+                <input type="text" id="university_id" name="university_id" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+                <label for="university_name" class="block text-sm font-medium text-gray-700">University Name</label>
+                <select id="university_name" name="university_name" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select University</option>
+                    <!-- Universities will be populated here -->
+                    <option value="Bougainville Technical College">Bougainville Technical College</option>
+                    <option value="Divine Word University">Divine Word University</option>
+                    <option value="Don Bosco Technological Institute">Don Bosco Technological Institute</option>
+                    <option value="Enga Teachers College">Enga Teachers College</option>
+                    <option value="Highlands Agricultural College">Highlands Agricultural College</option>
+                    <option value="Institute of Business Studies">Institute of Business Studies</option>
+                    <option value="Kimbe College of Health Sciences">Kimbe College of Health Sciences</option>
+                    <option value="Kundiawa School of Nursing">Kundiawa School of Nursing</option>
+                    <option value="Lae University of Technology">Lae University of Technology</option>
+                    <option value="Madang Technical College">Madang Technical College</option>
+                    <option value="Mendi School of Nursing">Mendi School of Nursing</option>
+                    <option value="Milne Bay Technical College">Milne Bay Technical College</option>
+                    <option value="Mt Hagen Technical College">Mt Hagen Technical College</option>
+                    <option value="Pacific Adventist University">Pacific Adventist University</option>
+                    <option value="Pacific Adventist University (Raluana)">Pacific Adventist University (Raluana)
+                    </option>
+                    <option value="Papua New Guinea University of Technology">Papua New Guinea University of Technology
+                    </option>
+                    <option value="Popondetta Teachers College">Popondetta Teachers College</option>
+                    <option value="University of Natural Resources and Environment">University of Natural Resources and
+                        Environment</option>
+                    <option value="University of Papua New Guinea">University of Papua New Guinea</option>
+                    <option value="Western Pacific University">Western Pacific University</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">University Email</label>
+                <input type="email" id="email" name="email" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password" name="password" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <button type="submit"
+                class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200">
+                Register Admin
+            </button>
+        </form>
+
+        <div id="message" class="mt-4 text-center hidden"></div>
+
+        <p class="mt-4 text-center text-sm text-gray-600">
+            Already have an account? <a href="/admin/login" class="text-blue-600 hover:underline">Login here</a>
+        </p>
+    </div>
+
+    <script>
+        document.getElementById('adminRegisterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const messageDiv = document.getElementById('message');
+
+            try {
+                const response = await fetch('/admin/register', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                messageDiv.textContent = data.message || data.error;
+                messageDiv.className = 'mt-4 text-center p-2 rounded ' + (response.ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+                messageDiv.classList.remove('hidden');
+
+                if (response.ok) {
+                    setTimeout(() => window.location.href = '/admin/login', 2000);
+                }
+            } catch (error) {
+                messageDiv.textContent = 'An error occurred. Please try again.';
+                messageDiv.className = 'mt-4 text-center p-2 rounded bg-red-100 text-red-700';
+                messageDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>
