@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - TruPas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full fade-in">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-900">Admin Login</h1>
+
+        <form id="adminLoginForm" class="space-y-4">
+            <div>
+                <label for="university_id" class="block text-sm font-medium text-gray-700">University ID</label>
+                <input type="text" id="university_id" name="university_id" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password" name="password" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <button type="submit"
+                class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200">
+                Login
+            </button>
+        </form>
+
+        <div id="message" class="mt-4 text-center hidden"></div>
+
+        <p class="mt-4 text-center text-sm text-gray-600">
+            Don't have an admin account? <a href="/admin/register" class="text-blue-600 hover:underline">Register
+                here</a>
+        </p>
+    </div>
+
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const messageDiv = document.getElementById('message');
+
+            try {
+                const response = await fetch('/admin/login', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    messageDiv.textContent = data.error || 'Login failed';
+                    messageDiv.className = 'mt-4 text-center p-2 rounded bg-red-100 text-red-700';
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                messageDiv.textContent = 'An error occurred. Please try again.';
+                messageDiv.className = 'mt-4 text-center p-2 rounded bg-red-100 text-red-700';
+                messageDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>

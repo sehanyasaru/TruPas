@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - TruPas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('datetime').innerText = now.toLocaleString();
+        }
+        setInterval(updateTime, 1000);
+    </script>
+    <style>
+        /* Custom toggle switch styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #68D391;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 font-sans" onload="updateTime()">
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-1/4 bg-[#1a3c5e] text-white flex flex-col p-6 shadow-xl z-10">
+            <div class="mb-10 text-center">
+                <img src="/static/uploads/logo_new.jpg" alt="Logo"
+                    class="w-24 h-auto mx-auto mb-4 rounded-full border-2 border-white">
+                <h2 class="text-2xl font-bold">Admin Panel</h2>
+            </div>
+
+            <div class="flex-grow flex flex-col justify-center space-y-8">
+                <div class="text-center p-4 bg-[#2c527a] rounded-lg shadow-inner">
+                    <p id="datetime" class="text-lg font-mono mb-2"></p>
+                    <p class="text-sm opacity-75">Local Time</p>
+                </div>
+
+                <div class="text-center p-4">
+                    <h3 class="text-xl font-light">Welcome,</h3>
+                    <h1 class="text-3xl font-bold mt-2 text-[#68D391]">{{ university_name }}</h1>
+                </div>
+            </div>
+
+            <div class="mt-auto">
+                <a href="/admin/logout"
+                    class="block w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-center rounded transition duration-200">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="w-3/4 p-8 overflow-y-auto bg-gray-50">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-4">Student Credential Approvals</h2>
+
+            {% if students %}
+            <div class="space-y-4">
+                {% for student in students %}
+                <div
+                    class="bg-white p-6 rounded-lg shadow-md border hover:shadow-lg transition duration-200 flex justify-between items-center">
+                    <div class="flex-grow">
+                        <div class="flex items-center mb-2">
+                            <h3 class="text-xl font-bold text-gray-800 mr-3">{{ student.applicant_name }}</h3>
+                            <span
+                                class="inline-block px-2 py-1 text-xs font-semibold rounded-full {{ 'bg-green-100 text-green-800' if student.status == 'verified' else 'bg-yellow-100 text-yellow-800' }}">
+                                {{ student.status | capitalize }}
+                            </span>
+                        </div>
+                        <p class="text-gray-600"><span class="font-semibold">Course:</span> {{ student.course_name }}
+                        </p>
+                        <p class="text-gray-600"><span class="font-semibold">ID:</span> {{ student.index_number }}</p>
+
+                        <div class="mt-3">
+                            <a href="{{ student.file_url }}" target="_blank"
+                                class="text-blue-600 hover:text-blue-800 underline text-sm mr-4">
+                                <i class="fas fa-eye mr-1"></i> Preview Certificate
+                            </a>
+                            <a href="{{ student.file_url }}" download
+                                class="text-green-600 hover:text-green-800 underline text-sm">
+                                <i class="fas fa-download mr-1"></i> Download
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="ml-6 flex flex-col items-center">
+                        <span class="text-xs text-gray-500 mb-1">Approve</span>
+                        <div
+                            class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="toggle_{{ student.id }}"
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer duration-200 ease-in {{ 'right-0 border-green-400' if student.status == 'verified' else '' }}"
+                                {% if student.status=='verified' %}checked disabled{% endif %}
+                                onchange="approveStudent('{{ student.id }}')" />
+                            <label for="toggle_{{ student.id }}"
+                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer {{ 'bg-green-400' if student.status == 'verified' else '' }}"></label>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-20 text-gray-500">
+                <i class="fas fa-user-graduate text-6xl mb-4 text-gray-300"></i>
+                <p class="text-xl">No pending student approvals found for {{ university_name }}.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        async function approveStudent(docId) {
+            if (!confirm('Are you sure you want to approve this student credential?')) {
+                // Reset toggle if cancelled
+                document.getElementById('toggle_' + docId).checked = false;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/approve_credential/${docId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Student credential approved successfully!');
+                    location.reload(); // Reload to update state efficiently
+                } else {
+                    alert('Error: ' + data.error);
+                    document.getElementById('toggle_' + docId).checked = false; // Revert
+                }
+            } catch (error) {
+                console.error('Error approving:', error);
+                alert('An error occurred.');
+                document.getElementById('toggle_' + docId).checked = false; // Revert
+            }
+        }
+    </script>
+</body>
+
+</html>
