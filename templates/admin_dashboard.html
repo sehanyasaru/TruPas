@@ -98,7 +98,7 @@
                             <input type="checkbox" name="toggle" id="toggle_{{ student.id }}"
                                 class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer duration-200 ease-in {{ 'right-0 border-green-400' if student.status == 'verified' else '' }}"
                                 {% if student.status=='verified' %}checked disabled{% endif %}
-                                onchange="approveStudent('{{ student.id }}')" />
+                                onchange="approveStudent('{{ student.id }}', '{{ student.user_id }}')" />
                             <label for="toggle_{{ student.id }}"
                                 class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer {{ 'bg-green-400' if student.status == 'verified' else '' }}"></label>
                         </div>
@@ -116,7 +116,7 @@
     </div>
 
     <script>
-        async function approveStudent(docId) {
+        async function approveStudent(docId, userId) {
             if (!confirm('Are you sure you want to approve this student credential?')) {
                 // Reset toggle if cancelled
                 document.getElementById('toggle_' + docId).checked = false;
@@ -124,7 +124,8 @@
             }
 
             try {
-                const response = await fetch(`/admin/approve_credential/${docId}`, {
+                // Pass user_id as query param for direct access
+                const response = await fetch(`/admin/approve_credential/${docId}?user_id=${userId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

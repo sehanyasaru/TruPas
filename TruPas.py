@@ -22,6 +22,7 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from firebase_admin import credentials, auth, firestore
 from firebase_admin.auth import ActionCodeSettings
+from google.cloud.firestore_v1.field_path import FieldPath  # Added explicitly
 from datetime import datetime
 import firebase_admin
 import requests  # For Firebase REST API calls
@@ -282,7 +283,7 @@ def admin_required(f):
 
 @app.route('/')
 def index():
-    return render_template('TruPass_splashscreen.html')
+    return render_template('Realme.html')
 
 @app.route('/home')
 @require_login
@@ -1053,43 +1054,20 @@ def admin_logout():
 @admin_required
 def approve_credential(doc_id):
     try:
-        # We need to find the document. It could be in any user's subcollection.
-        # Efficient way: Query collection group by ID (assuming Firestore IDs are unique enough or we use unique_id)
-        # Firestore IDs are auto-generated and unique.
+        user_id = request.args.get('user_id')
         
-        # Try finding in uploads first (pending)
-        # Problem: 'collection_group' doesn't support 'get()' for a single ID directly without a where clause if we don't know the path.
-        # But we can query:
+        if not user_id:
+             return jsonify({"error": "User ID is required"}), 400
         
-        # Strategy: Search in uploads first.
-        results = db.collection_group('uploads').stream() # INEFFICIENT in production!
-        # BETTER: Query by unique field if we have one. We have 'unique_id' in uploads? Yes.
-        # modifying creating to use unique_id as well?
-        
-        # Let's use the property that we loaded the list with user_id in dashboard, 
-        # BUT the route only takes doc_id. 
-        # I should have passed user_id in the route. 
-        # But for now, I will search using the doc_id, assuming I can find it.
-        # Actually, simpler: The dashboard knows the user_id. 
-        # I'll update the logic to accept optional user_id query param or just find it.
-        
-        # To make it robust without changing route signature too much (or if I can't change template easily now):
-        # I'll use a collection group query on FieldPath.documentId()
-        
-        # searches = db.collection_group('uploads').where(firestore.FieldPath.document_id(), '==', doc_id).stream()
-        # This works!
-        
-        target_doc = None
-        for doc in db.collection_group('uploads').where(firestore.FieldPath.document_id(), '==', doc_id).stream():
-            target_doc = doc
-            break
+        # Direct access to the document in the specific user's subcollection
+        target_doc_ref = db.collection('users').document(user_id).collection('uploads').document(doc_id)
+        target_doc = target_doc_ref.get()
             
-        if not target_doc:
+        if not target_doc.exists:
              return jsonify({"error": "Document not found"}), 404
              
         # Now verify/move it
         data = target_doc.to_dict()
-        user_id = target_doc.reference.parent.parent.id
         
         # Credentials Ref
         cred_ref = db.collection('users').document(user_id).collection('credentials').document(doc_id)
@@ -1114,7 +1092,7 @@ def approve_credential(doc_id):
 
         batch = db.batch()
         batch.set(cred_ref, credential_data)
-        batch.delete(target_doc.reference)
+        batch.delete(target_doc_ref)
         batch.commit()
         
         return jsonify({"success": True})
