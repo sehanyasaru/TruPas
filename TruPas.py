@@ -25,8 +25,10 @@ from firebase_admin.auth import ActionCodeSettings
 from datetime import datetime
 import firebase_admin
 import requests  # For Firebase REST API calls
+import boto3
+from botocore.exceptions import ClientError
 
-app = Flask(__name__)
+app = Flask(__name__,static_folder='static', static_url_path='/static')
 app.secret_key = 'your_secret_key'  # Needed for session
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -51,19 +53,51 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 db = firestore.client()  # Firestore instance
 
-def authenticate():
+S3_BUCKET_NAME = "learnxplus-backups"
+S3_FOLDER = "references/"  # Folder where certificates will be stored
+S3_REGION = "ap-southeast-2"  # Your region from screenshot
+
+# ⚠️ SECURITY WARNING: Remove these after testing! Use environment variables instead
+AWS_ACCESS_KEY_ID = "AKIA2OOB4MWJQDB4QSGY"
+AWS_SECRET_ACCESS_KEY = "0YBIXyOnlD/qaKxLL/vB7WDr4PYji6IbJeoPId94"
+
+# Initialize S3 client
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name=S3_REGION
+)
+
+def upload_to_s3(file_storage):
     try:
-        logger.info("Authenticating with Google Drive API")
-        creds = ServiceAccountCredentials.from_json_keyfile_name(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        filename    = secure_filename(file_storage.filename)
+        unique_name = f"{uuid.uuid4().hex[:12]}_{filename}"
+        s3_key      = f"{S3_FOLDER}{unique_name}"
+
+        file_storage.seek(0)
+
+        # FIXED: NO ACL parameter anymore
+        s3_client.upload_fileobj(
+            file_storage,
+            S3_BUCKET_NAME,
+            s3_key,
+            ExtraArgs={
+                'ContentType': file_storage.content_type or 'application/octet-stream',
+            }
         )
-        gauth = GoogleAuth()
-        gauth.credentials = creds
-        drive = GoogleDrive(gauth)
-        logger.info("Authentication successful")
-        return drive
+
+        url = f"https://{S3_BUCKET_NAME}.s3.{S3_REGION}.amazonaws.com/{s3_key}"
+        logger.info(f"S3 upload OK → {url}")
+        return url
+
+    except ClientError as e:
+        code = e.response['Error']['Code']
+        msg  = e.response['Error']['Message']
+        logger.error(f"S3 error {code}: {msg}")
+        raise Exception(f"S3 upload failed: {code} – {msg}")
     except Exception as e:
-        logger.error(f"Authentication failed: {str(e)}")
+        logger.exception("Unexpected S3 upload error")
         raise
 
 @app.route('/check-email', methods=['GET', 'POST'])
@@ -140,102 +174,52 @@ def check_email():
 #         finally:
 #             connection.close()
 
-def upload_to_drive(file_storage, folder_id=UPLOAD_FOLDER_ID):
-    tmp_file_path = None
-    gfile_id = None  # Track for cleanup if needed
+def require_login(f):
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in first.', 'warning')
+            return redirect(url_for('DHERST_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/get_upload/<upload_id>', methods=['GET'])
+@require_login
+def get_upload(upload_id):
+    """
+    Fetch existing upload data for editing/updating
+    """
+    user_id = session['user_id']
+    
     try:
-        drive = authenticate()
-
-        # Save to temp file
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tmp_file:
-            file_storage.save(tmp_file.name)
-            tmp_file_path = tmp_file.name
-        logger.debug(f"Saved file to temporary path: {tmp_file_path}")
-
-        # Create and upload file
-        gfile = drive.CreateFile({
-            'title': 'temp',
-            'parents': [{'id': folder_id}]
+        # Get the upload document
+        upload_ref = db.collection(f'users/{user_id}/uploads').document(upload_id)
+        upload_doc = upload_ref.get()
+        
+        if not upload_doc.exists:
+            return jsonify({"error": "Upload not found"}), 404
+            
+        data = upload_doc.to_dict()
+        
+        # Return only the fields needed for the modal
+        return jsonify({
+            "success": True,
+            "data": {
+                "applicant_name": data.get('applicant_name', ''),
+                "gender": data.get('gender', ''),
+                "province": data.get('province', ''),
+                "university": data.get('university', ''),
+                "course_name": data.get('course_name', ''),
+                "index_number": data.get('index_number', ''),
+                "doc_name": data.get('doc_name', ''),
+                "title": data.get('title', '')  # For display
+                # Don't include file_url - let user choose new file if needed
+            }
         })
-        # Explicit close before upload (helps Windows locks)
-        file_storage.close()
-
-        gfile.SetContentFile(tmp_file_path)
-        gfile.Upload()
-        logger.debug(f"File uploaded, temporary ID: {gfile['id']}")
-        gfile_id = gfile['id']
-
-        # Rename
-        gfile['title'] = gfile['id']
-        gfile.Upload()
-        logger.info(f"File renamed to its ID: {gfile['id']}")
-
-        # Safe permissions handling
-        try:
-            # Check existing permissions
-            permissions = gfile.GetPermissions()
-            has_public_reader = any(
-                p.get('role') == 'reader' and p.get('type') == 'anyone'
-                for p in permissions if isinstance(p, dict) and 'role' in p and 'type' in p
-            )
-            if not has_public_reader:
-                gfile.InsertPermission({
-                    'type': 'anyone',
-                    'value': 'anyone',
-                    'role': 'reader'
-                })
-                logger.debug("Explicitly set file permissions to public reader")
-            else:
-                logger.debug("Public reader permission already present/inherited; skipping")
-        except HttpError as e:
-            error_msg = str(e).lower()
-            if 'cannotmodifyinheritedpermission' in error_msg:
-                logger.warning(f"Permissions inherited from parent (file accessible via folder link). Skipping explicit set. Full error: {str(e)}")
-                # Do NOT raise—continue as success (file is public via folder)
-            else:
-                # Re-raise other permission errors (e.g., auth issues)
-                logger.error(f"Unexpected permissions error: {str(e)}")
-                raise
-
-        # Enhanced temp file cleanup (explicit checks/closes)
-        if tmp_file_path:
-            max_retries = 5
-            for attempt in range(max_retries):
-                try:
-                    if os.path.exists(tmp_file_path):
-                        os.unlink(tmp_file_path)  # Use unlink for cross-platform
-                        logger.info(f"Temporary file deleted: {tmp_file_path}")
-                    break
-                except (PermissionError, OSError) as pe:
-                    if attempt < max_retries - 1:
-                        logger.warning(f"Temp file locked (attempt {attempt + 1}/{max_retries}): {str(pe)}. Retrying in 2s...")
-                        time.sleep(2)  # Even longer for stubborn Windows locks
-                    else:
-                        logger.error(f"Failed to delete temp file after {max_retries} attempts: {str(pe)}. Clean manually from %TEMP%.")
-
-        # Return shareable URL (works even if inherited)
-        return f"https://drive.google.com/file/d/{gfile['id']}/view?usp=sharing"
-
+        
     except Exception as e:
-        logger.error(f"Core upload failed (file not saved): {str(e)}")
-        # Emergency cleanup
-        if tmp_file_path and os.path.exists(tmp_file_path):
-            try:
-                os.unlink(tmp_file_path)
-                logger.info(f"Emergency cleanup: Deleted {tmp_file_path}")
-            except Exception as cleanup_err:
-                logger.error(f"Emergency cleanup failed: {str(cleanup_err)}")
-
-        # Optional: Delete partial file from Drive if ID exists
-        if gfile_id:
-            try:
-                trash_file = drive.CreateFile({'id': gfile_id})
-                trash_file.Delete()
-                logger.info(f"Partial file {gfile_id} trashed from Drive")
-            except Exception as trash_err:
-                logger.warning(f"Could not trash partial file {gfile_id}: {str(trash_err)}")
-
-        raise
+        logger.error(f"Error fetching upload {upload_id}: {str(e)}")
+        return jsonify({"error": "Failed to load upload details"}), 500
 
 def send_verification_email(to_email, link, firstname):
     smtp_server = "smtp.gmail.com"
@@ -286,14 +270,6 @@ def send_verification_email(to_email, link, firstname):
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
 
-def require_login(f):
-    """Decorator to check if user is logged in"""
-    @functools.wraps(f)  # Preserve original function name and docstring
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 def admin_required(f):
     """Decorator to check if admin is logged in"""
@@ -306,7 +282,7 @@ def admin_required(f):
 
 @app.route('/')
 def index():
-    return render_template('RealMe.html')
+    return render_template('TruPass_splashscreen.html')
 
 @app.route('/home')
 @require_login
@@ -535,12 +511,12 @@ import json
 
 @app.route('/claim', methods=['GET', 'POST'])
 @require_login
-def claim_badges():
+def claim():
     user_id = session['user_id']
 
-    # PNG Provinces → Universities (accurate)
+    # Dropdown data (unchanged)
     province_universities = {
-        "National Capital District": ["University of Papua New Guinea", "Pacific Adventist University", "Institute of Business Studies"],
+        "National Capital District": ["University of Papua New Guinea", "Pacific Adventist University"],
         "Central": ["Don Bosco Technological Institute"],
         "Milne Bay": ["Milne Bay Technical College"],
         "Oro": ["Popondetta Teachers College"],
@@ -558,7 +534,6 @@ def claim_badges():
         "Gulf": [], "West Sepik": [], "New Ireland": [], "Manus": [], "Jiwaka": [], "Hela": []
     }
 
-    # 35+ official courses
     courses_list = [
         "Bachelor of Science in Engineering",
         "Bachelor of Science in Transformative Leadership and Studies",
@@ -597,73 +572,161 @@ def claim_badges():
         "Certificate in Cybersecurity"
     ]
 
+    # ────────────────────────────────────────────────────────
+    # GET: Show the claim page
+    # ────────────────────────────────────────────────────────
     if request.method == 'GET':
-        # Your existing upload/verified logic stays the same
-        uploads_query = db.collection(f'users/{user_id}/uploads') \
-            .where('status', '==', 'reviewing') \
-            .order_by('created_at', direction=firestore.Query.DESCENDING).stream()
-        uploads = [doc.to_dict() | {'id': doc.id} for doc in uploads_query]
+        try:
+            # Pending uploads (reviewing)
+            uploads_query = (
+                db.collection(f'users/{user_id}/uploads')
+                .where('status', '==', 'reviewing')
+                .order_by('created_at', direction=firestore.Query.DESCENDING)
+                .stream()
+            )
+            uploads = [doc.to_dict() | {'id': doc.id} for doc in uploads_query]
 
-        verified_query = db.collection(f'users/{user_id}/credentials') \
-            .where('status', '==', 'verified') \
-            .order_by('created_at', direction=firestore.Query.DESCENDING).stream()
-        verified_badges = [doc.to_dict() | {'id': doc.id} for doc in verified_query]
+            # Verified badges
+            verified_query = (
+                db.collection(f'users/{user_id}/credentials')
+                .where('status', '==', 'verified')
+                .order_by('created_at', direction=firestore.Query.DESCENDING)
+                .stream()
+            )
+            verified_badges = [doc.to_dict() | {'id': doc.id} for doc in verified_query]
 
-        return render_template('claim.html',
-                               uploads=uploads,
-                               verified_badges=verified_badges,
-                               first_name=session.get('first_name', 'User'),
-                               provinces=sorted(province_universities.keys()),
-                               universities_json=json.dumps(province_universities),
-                               courses=courses_list)
+            return render_template(
+                'claim.html',
+                uploads=uploads,
+                verified_badges=verified_badges,
+                first_name=session.get('first_name', 'User'),
+                provinces=sorted(province_universities.keys()),
+                universities_json=json.dumps(province_universities),
+                courses=courses_list
+            )
 
-    # POST — same validation + file upload only after form is complete
+        except Exception as e:
+            logger.exception("Error loading claim page")
+            flash('Failed to load uploads. Please try again.', 'error')
+            return render_template(
+                'claim.html',
+                uploads=[], verified_badges=[],
+                first_name=session.get('first_name', 'User'),
+                provinces=[], universities_json="{}", courses=[]
+            )
+
+    # ────────────────────────────────────────────────────────
+    # POST: Create new or Update existing
+    # ────────────────────────────────────────────────────────
     if request.method == 'POST':
         try:
+            # ── Read all incoming form data ──
+            upload_id      = request.form.get('upload_id')                  # key for update
+            doc_name       = request.form.get('doc_name', '').strip()
             applicant_name = request.form.get('applicant_name', '').strip()
             gender         = request.form.get('gender')
             province       = request.form.get('province')
             university     = request.form.get('university')
             course_name    = request.form.get('course_name')
-            course_type    = request.form.get('course_type', '').strip()
             index_number   = request.form.get('index_number', '').strip()
 
-            if not all([applicant_name, gender, province, university, course_name]):
-                return jsonify({"error": "All fields are required"}), 400
+            # ── File handling (new or replacement) ──
+            file_url = None
+            if 'file' in request.files and request.files['file'].filename:
+                file = request.files['file']
+                file_url = upload_to_s3(file)
+                logger.info(f"File uploaded/replaced → {file_url}")
 
-            if 'file' not in request.files or request.files['file'].filename == '':
-                return jsonify({"error": "Please upload your certificate"}), 400
+            # ── DEBUG: Log EVERYTHING received ──
+            logger.info("═" * 70)
+            logger.info("POST /claim received - raw form data:")
+            for key, value in request.form.items(multi=True):
+                logger.info(f"  {key:20} : {value}")
+            logger.info(f"  file present       : {bool(file_url)}")
+            logger.info(f"  upload_id detected : {upload_id}")
+            logger.info("═" * 70)
 
-            file = request.files['file']
-            allowed = ('.pdf', '.jpg', '.jpeg', '.png')
-            if not file.filename.lower().endswith(allowed):
-                return jsonify({"error": "Only PDF, JPG, PNG allowed"}), 400
+            # ── Validation ──
+            required = {
+                'Applicant name': applicant_name,
+                'Gender': gender,
+                'Province': province,
+                'University': university,
+                'Course name': course_name,
+            }
+            missing = [name for name, val in required.items() if not val]
+            if missing:
+                return jsonify({
+                    "error": f"Missing required field(s): {', '.join(missing)}"
+                }), 400
 
-            title = course_name[:50] + ("..." if len(course_name) > 50 else "")
-
-            # Upload only after full validation
-            drive_url = upload_to_drive(file)
-
-            db.collection(f'users/{user_id}/uploads').add({
-                'title': title,
-                'unique_id': str(uuid.uuid4()),
-                'file_url': drive_url,
-                'status': 'reviewing',
-                'created_at': firestore.SERVER_TIMESTAMP,
+            # ── Data to save/update ──
+            data = {
                 'applicant_name': applicant_name,
-                'gender': gender,
-                'province': province,
-                'university': university,
-                'course_name': course_name,
-                'course_type': course_type or "Not specified",
-                'index_number': index_number
-            })
+                'gender':         gender,
+                'province':       province,
+                'university':     university,
+                'course_name':    course_name,
+                'index_number':   index_number,
+                'updated_at':     firestore.SERVER_TIMESTAMP,
+            }
 
-            return jsonify({"message": "Certificate submitted successfully! Under review."})
+            # Include title/doc_name only if provided
+            if doc_name:
+                data['title'] = doc_name
+                data['doc_name'] = doc_name
+
+            # Include new file URL if uploaded
+            if file_url:
+                data['file_url'] = file_url
+
+            # ── UPDATE path ──
+            if upload_id:
+                upload_ref = db.collection(f'users/{user_id}/uploads').document(upload_id)
+
+                if not upload_ref.get().exists:
+                    logger.warning(f"Upload not found: {upload_id}")
+                    return jsonify({"error": "Upload not found"}), 404
+
+                # Perform update
+                upload_ref.update(data)
+                logger.info(f"UPDATED upload {upload_id} → fields: {list(data.keys())}")
+
+                return jsonify({
+                    "success": True,
+                    "message": "Certificate details updated successfully!"
+                })
+
+            # ── CREATE new upload ──
+            else:
+                # Require file for new submissions
+                if not file_url:
+                    return jsonify({"error": "Certificate file is required for new uploads"}), 400
+
+                data.update({
+                    'title': doc_name or course_name or "Certificate",
+                    'unique_id': str(uuid.uuid4()),
+                    'status': 'reviewing',
+                    'created_at': firestore.SERVER_TIMESTAMP,
+                    'course_type': 'Not specified',
+                })
+
+                new_doc = db.collection(f'users/{user_id}/uploads').add(data)
+                new_id = new_doc[1].id
+
+                logger.info(f"CREATED new upload → ID: {new_id}")
+
+                return jsonify({
+                    "success": True,
+                    "message": "Certificate submitted successfully! Under review.",
+                    "upload_id": new_id
+                })
 
         except Exception as e:
-            logger.error(f"Upload error: {e}")
-            return jsonify({"error": "Upload failed. Try again."}), 500
+            logger.exception("Critical error in /claim POST")
+            return jsonify({
+                "error": "Server error occurred. Please contact support."
+            }), 500
 
 @app.route('/update_upload/<upload_id>', methods=['POST'])
 @require_login
@@ -675,6 +738,7 @@ def update_upload(upload_id):
         if not upload_doc.exists:
             return jsonify({"error": "Upload not found"}), 404
 
+        # Get form data
         doc_name = request.form.get('doc_name', '').strip()
         applicant_name = request.form.get('applicant_name', '').strip()
         course_name = request.form.get('course_name', '').strip()
@@ -682,15 +746,17 @@ def update_upload(upload_id):
         course_type = request.form.get('course_type', '').strip()
         index_number = request.form.get('index_number', '').strip()
 
+        # Prepare update data
         update_data = {}
         if doc_name:
-            update_data['title'] = doc_name[:20]
+            update_data['title'] = doc_name[:50] if len(doc_name) <= 50 else doc_name[:47] + "..."
+            update_data['doc_name'] = doc_name
         if applicant_name:
             update_data['applicant_name'] = applicant_name
         if course_name:
             update_data['course_name'] = course_name
         if organization_name:
-            update_data['organization_name'] = organization_name
+            update_data['university'] = organization_name  # Assuming organization_name maps to university
         if course_type:
             update_data['course_type'] = course_type
         if index_number:
@@ -698,10 +764,12 @@ def update_upload(upload_id):
 
         if update_data:
             upload_ref.update(update_data)
+            logger.info(f"Updated upload {upload_id} for user {user_id}")
 
         return jsonify({"message": "Details updated successfully!"})
+
     except Exception as e:
-        logger.error(f"Update error: {str(e)}")
+        logger.error(f"Update error for upload {upload_id}: {str(e)}")
         return jsonify({"error": f"Failed to update: {str(e)}"}), 500
 
 @app.route('/verify_upload/<upload_id>', methods=['POST'])
@@ -1056,4 +1124,4 @@ def approve_credential(doc_id):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=8080)
