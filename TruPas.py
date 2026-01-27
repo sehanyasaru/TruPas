@@ -28,7 +28,7 @@ import requests  # For Firebase REST API calls
 import boto3
 from botocore.exceptions import ClientError
 
-app = Flask(__name__)
+app = Flask(__name__,static_folder='static', static_url_path='/static')
 app.secret_key = 'your_secret_key'  # Needed for session
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -273,7 +273,7 @@ def send_verification_email(to_email, link, firstname):
 
 @app.route('/')
 def index():
-    return render_template('RealMe.html')
+    return render_template('TruPass_splashscreen.html')
 
 @app.route('/home')
 @require_login

@@ -18,6 +18,7 @@
             0% { box-shadow: 0 0 20px rgba(252, 209, 22, 0.6), inset 0 0 15px rgba(252, 209, 22, 0.2); }
             100% { box-shadow: 0 0 50px rgba(252, 209, 22, 1), inset 0 0 30px rgba(252, 209, 22, 0.5); }
         }
+	
 
         .logo-container {
             position: relative;
@@ -153,54 +154,55 @@
             </div>
         </div>
     </section>
+	<!-- Supporting DHERST PNG Section -->
+	<!-- Supporting DHERST PNG Section -->
+<section class="py-20 px-6 bg-gradient-to-r from-red-50 via-yellow-50 to-white">
+    <div class="max-w-7xl mx-auto text-center">
+        <h2 class="text-4xl font-bold text-gray-800 mb-6">Supporting DHERST PNG</h2>
+        <p class="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+         TruPas fully aligns with the Department of Higher Education, Research, Science and Technology (DHERST) vision of building a skilled, verified, and globally competitive workforce for Papua New Guinea. By issuing verified digital credentials, we help universities, institutions, and training providers contribute to national transparency, reduce certificate fraud, and enable instant verification supporting DHERST's goals of quality assurance and graduate employability.
+        </p>
 
-    <section class="py-20 px-6 bg-gradient-to-r from-red-50 via-white to-yellow-50">
-        <div class="max-w-6xl mx-auto text-center">
-            <!-- Icon -->
-            <div class="inline-flex items-center justify-center w-28 h-28 bg-gradient-to-br from-red-600 to-yellow-500 rounded-full mb-8 shadow-2xl pulse-glow">
-                <i class="fas fa-university text-6xl text-white"></i>
+        <!-- Fixed image with reliable fallback -->
+        <div class="relative mx-auto mb-12 w-48 h-48 logo-container golden-glow flex items-center justify-center overflow-hidden rounded-full bg-white border-4 border-yellow-400">
+            <img src="static/uploads/DHESRT.png" 
+                 alt="DHERST Logo" 
+			class="w-full h-full object-contain p-6"
+                 loading="lazy"
+                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjE4Ij5JbWFnZTwvdGV4dD48L3N2Zz4='; this.alt='DHERST Logo (Fallback)';">
+            
+            <!-- Visible fallback icon if image fails -->
+            <i class="fas fa-university text-6xl text-gray-500 absolute" style="display: none;"></i>
+        </div>
+
+        <!-- Benefits cards -->
+        <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div class="p-6 bg-white rounded-xl shadow-md">
+                <i class="fas fa-shield-alt text-4xl text-red-600 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Fraud Prevention</h3>
+                <p class="text-gray-600">Blockchain-powered verification eliminates fake certificates.</p>
             </div>
-
-            <h2 class="text-4xl md:text-5xl font-bold text-black mb-8 leading-tight">
-                Supporting <span class="text-red-600">DHERST PNG</span><br>
-                National Education Goals
-            </h2>
-
-            <p class="text-xl text-gray-800 max-w-4xl mx-auto leading-relaxed mb-16">
-                TruPas fully aligns with the <strong>Department of Higher Education, Research, Science and Technology (DHERST)</strong>
-                vision of building a skilled, verified, and globally competitive workforce for Papua New Guinea.
-                By issuing verified digital credentials, we help universities, institutions, and training providers contribute to
-                national transparency, reduce certificate fraud, and enable instant verification supporting DHERST’s goals of
-                quality assurance and graduate employability.
-            </p>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
-
-                <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-red-100">
-                    <i class="fas fa-building text-5xl text-red-600 mb-4"></i>
-                    <div class="text-5xl md:text-6xl font-bold text-black" data-count="68">0</div>
-                    <p class="text-lg text-gray-700 mt-3 font-medium">Institutions Enrolled</p>
-                </div>
-                <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-yellow-200 scale-105">
-                    <i class="fas fa-certificate text-5xl text-yellow-600 mb-4"></i>
-                    <div class="text-5xl md:text-6xl font-bold text-black" data-count="28450">0</div>
-                    <p class="text-lg text-gray-700 mt-3 font-medium">Verified Credentials Issued</p>
-                </div>
-
-                <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-black/10">
-                    <i class="fas fa-check-circle text-5xl text-green-600 mb-4"></i>
-                    <div class="text-5xl md:text-6xl font-bold text-black" data-count="342">0</div>
-                    <p class="text-lg text-gray-700 mt-3 font-medium">Verifications Per Day</p>
-                </div>
+            <div class="p-6 bg-white rounded-xl shadow-md">
+                <i class="fas fa-globe text-4xl text-yellow-600 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Global Recognition</h3>
+                <p class="text-gray-600">Instant QR code and API verification worldwide.</p>
             </div>
-
-            <div class="mt-16">
-                <a href="/dashboard" class="inline-flex items-center bg-black text-yellow-400 font-bold text-xl px-14 py-6 rounded-full hover:bg-gray-900 professional-button shadow-2xl transition transform hover:scale-105">
-                    Explore National Credential Insights <i class="fas fa-arrow-right ml-4"></i>
-                </a>
+            <div class="p-6 bg-white rounded-xl shadow-md">
+                <i class="fas fa-graduation-cap text-4xl text-blue-600 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Quality Assurance</h3>
+                <p class="text-gray-600">Supports DHERST standards for education credentials.</p>
             </div>
         </div>
-    </section>
+    </div>
+<!-- Explore National Credential Insights Button -->
+<div class="mt-12 text-center">
+    <a href="/DHERST_login" 
+       class="inline-flex items-center px-10 py-5 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold text-xl rounded-full shadow-2xl hover:from-yellow-500 hover:to-yellow-700 transform hover:scale-105 transition-all duration-300">
+        Explore National Credential Insights →
+        <i class="fas fa-arrow-right ml-3 text-xl"></i>
+    </a>
+</div>
+</section>
     <footer class="bg-black text-white py-16 px-6">
         <div class="max-w-7xl mx-auto text-center">
             <div class="logo-container golden-glow mx-auto mb-8 w-32 h-32">
